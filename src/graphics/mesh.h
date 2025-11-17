@@ -18,15 +18,15 @@ class Mesh {
 public:
   /**
    * @brief Creates a triangle mesh.
-   * @param positions The mesh vertex positions.
-   * @param normals The mesh normals.
-   * @param texcoords The mesh texture coordinates.
-   * @param indices Element indices where consecutive triples define a triangle face in the mesh.
-   * @param model_transform A 4x4 matrix representing an affine transform to apply to the mesh in model space.
-   * @throw std::invalid_argument Indicates the provided arguments do not represent a valid triangle mesh.
+   * @param positions The vertex positions.
+   * @param normals The vertex normals.
+   * @param texcoords The vertex texture coordinates.
+   * @param indices The vertex indices such that consecutive triples define a triangle face in the mesh.
+   * @param model_transform The initial affine transform to apply to vertices in the mesh.
+   * @throw std::invalid_argument Thrown if the provided vertex attributes do not represent a valid triangle mesh.
    * @note If @p indices is non-empty, it must define a valid triangle mesh (i.e., its size must be a nonzero multiple
    *       of 3). Otherwise, triangles are interpreted as sequential triples in @p positions which requires alignment
-   *       with @normals and @texcoords if specified.
+   *       with @p normals and @p texcoords if specified.
    */
   explicit Mesh(std::span<const glm::vec3> positions,
                 std::span<const glm::vec3> normals = {},
@@ -42,19 +42,19 @@ public:
 
   ~Mesh() noexcept;
 
-  /** @brief Gets the mesh vertex positions. */
+  /** @brief Gets the vertex positions. */
   [[nodiscard]] const std::vector<glm::vec3>& positions() const noexcept { return positions_; }
 
-  /** @brief Gets the mesh normals. */
+  /** @brief Gets the vertex normals. */
   [[nodiscard]] const std::vector<glm::vec3>& normals() const noexcept { return normals_; }
 
-  /** @brief Gets the mesh texture coordinates. */
+  /** @brief Gets the vertex texture coordinates. */
   [[nodiscard]] const std::vector<glm::vec2>& texcoords() const noexcept { return texcoords_; }
 
-  /** @brief Gets the mesh indices corresponding to a triangle face for every three consecutive integers. */
+  /** @brief Gets the vertex indices. */
   [[nodiscard]] const std::vector<GLuint>& indices() const noexcept { return indices_; }
 
-  /** @brief Gets the affine transform to apply to the mesh in model space. */
+  /** @brief Gets the model transform for converting mesh vertices to world-space coordinates. */
   [[nodiscard]] const glm::mat4& model_transform() const noexcept { return model_transform_; }
 
   /** @brief Renders the mesh to the current render target. */
@@ -90,13 +90,16 @@ public:
   void Translate(const glm::vec3& translation) { model_transform_ = glm::translate(model_transform_, translation); }
 
 private:
-  GLuint vertex_array_ = 0, vertex_buffer_ = 0, element_buffer_ = 0;
+  GLuint vertex_array_ = 0;
+  GLuint vertex_buffer_ = 0;
+  GLuint element_buffer_ = 0;
   std::vector<glm::vec3> positions_;
   std::vector<glm::vec3> normals_;
   std::vector<glm::vec2> texcoords_;
   std::vector<GLuint> indices_;
   glm::mat4 model_transform_{0.0f};
 };
+
 }  // namespace gfx
 
 #endif  // GRAPHICS_MESH_H_

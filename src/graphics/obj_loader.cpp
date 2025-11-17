@@ -211,11 +211,11 @@ Mesh LoadMesh(std::istream& istream) {
 
 }  // namespace
 
-Mesh obj_loader::LoadMesh(const std::filesystem::path& filepath) {
-  if (std::ifstream ifs{filepath}; ifs.good()) {
+Mesh obj_loader::LoadMesh(const std::filesystem::path& obj_filepath) {
+  if (std::ifstream ifs{obj_filepath}; ifs.good()) {
     return gfx::LoadMesh(ifs);
   }
-  throw std::runtime_error{std::format("Unable to open {}", filepath.generic_string())};
+  throw std::runtime_error{std::format("Failed to open {}", obj_filepath.generic_string())};
 }
 
 }  // namespace gfx

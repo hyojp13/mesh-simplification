@@ -14,14 +14,14 @@
 
 namespace gfx {
 
-/** @brief A program used to run one or more OpenGL shaders on the host GPU. */
+/** @brief An OpenGL shader program.  */
 class ShaderProgram {
 public:
   /**
    * @brief Creates a shader program.
-   * @param vertex_shader_filepath The filepath to the vertex shader to be compiled.
-   * @param fragment_shader_filepath The filepath to the fragment shader to be compiled.
-   * @throw std::runtime_error Thrown if the a file could not be opened or shader program creation was unsuccessful.
+   * @param vertex_shader_filepath The vertex shader filepath.
+   * @param fragment_shader_filepath The fragment shader filepath.
+   * @throw std::runtime_error Thrown if the shader program could not be created.
    */
   ShaderProgram(const std::filesystem::path& vertex_shader_filepath,
                 const std::filesystem::path& fragment_shader_filepath);
@@ -65,14 +65,14 @@ public:
   }
 
 private:
-  /** @brief A shader in the OpenGL graphics pipeline. */
+  /** @brief An OpenGL shader. */
   class Shader {
   public:
     /**
      * @brief Creates a shader.
-     * @param shader_type The shader type (e.g., GL_FRAGMENT_SHADER)
-     * @param shader_source The shader source code to be compiled.
-     * @throw std::runtime_error Thrown if shader creation was unsuccessful.
+     * @param shader_type The OpenGL shader type (e.g., GL_FRAGMENT_SHADER).
+     * @param shader_source The GLSL shader source code.
+     * @throw std::runtime_error Thrown if the shader could not be created.
      */
     Shader(GLenum shader_type, const std::string& shader_source);
 
@@ -87,10 +87,8 @@ private:
     GLuint id;  // NOLINT(misc-non-private-member-variables-in-classes): allow direct access to internal shader class
   };
 
-  // The following is needed to perform heterogeneous lookup in unordered containers. This is important because
-  // each uniform location query is performed using a string_view, but stored as a string. Without heterogeneous
-  // lookup, each query would have to be converted to a string (and hence allocate unnecessary memory) which would
-  // degrade performance on the critical rendering path.
+  // this is required to enable heterogeneous lookup which allows searching a std::unordered_map<std::string, T> using
+  // std::string_view keys without unnecessary allocations from constructing a temporary std::string
   struct StringViewHash {
     using is_transparent = void;
     static constexpr std::hash<std::string_view> kStringViewHash;

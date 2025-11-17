@@ -8,27 +8,27 @@
 namespace gfx {
 
 /**
- * @brief A material with various light reflectance properties used in the Phong reflection model.
- * @note Material properties courtesy of http://devernay.free.fr/cours/opengl/materials.html
+ * @brief A material containing light reflectance properties in the Phong reflection model.
+ * @see http://devernay.free.fr/cours/opengl/materials.html
  */
 struct Material {
-  /** @brief An enumeration for various material types. */
+  /** @brief An enumeration for different material types.  */
   enum class Type { kBrass, kBronze, kChrome, kEmerald, kGold, kJade, kObsidian, kPearl, kRuby, kSilver, kTurquoise };
 
   /**
-   * @brief A static factory function to construct a material from a dedicated material type.
-   * @param type The material type representing the material to construct.
+   * @brief Creates a material from a predefined material type.
+   * @param type The material type to create.
    * @return A material containing light reflectance properties for the provided material type.
    */
   static constexpr Material FromType(const Type type) noexcept {
     // NOLINTBEGIN(*-magic-numbers)
-    switch (constexpr auto kOpenGlShininess = 128.0f; type) {
+    switch (constexpr auto kShininess = 128.0f; type) {
       case Type::kBrass: {
         return Material{
             .ambient = glm::vec3{0.329412f, 0.223529f, 0.027451f},
             .diffuse = glm::vec3{0.780392f, 0.568627f, 0.113725f},
             .specular = glm::vec3{0.992157f, 0.941176f, 0.807843f},
-            .shininess = kOpenGlShininess * 0.21794872f,
+            .shininess = kShininess * 0.21794872f,
         };
       }
       case Type::kBronze: {
@@ -36,7 +36,7 @@ struct Material {
             .ambient = glm::vec3{0.2125f, 0.1275f, 0.054f},
             .diffuse = glm::vec3{0.714f, 0.4284f, 0.18144f},
             .specular = glm::vec3{0.393548f, 0.271906f, 0.166721f},
-            .shininess = kOpenGlShininess * 0.2f,
+            .shininess = kShininess * 0.2f,
         };
       }
       case Type::kChrome: {
@@ -44,7 +44,7 @@ struct Material {
             .ambient = glm::vec3{0.25f, 0.25f, 0.25f},
             .diffuse = glm::vec3{0.4f, 0.4f, 0.4f},
             .specular = glm::vec3{0.774597f, 0.774597f, 0.774597f},
-            .shininess = kOpenGlShininess * 0.6f,
+            .shininess = kShininess * 0.6f,
         };
       }
       case Type::kEmerald: {
@@ -52,7 +52,7 @@ struct Material {
             .ambient = glm::vec3{0.0215f, 0.1745f, 0.0215f},
             .diffuse = glm::vec3{0.07568f, 0.61424f, 0.07568f},
             .specular = glm::vec3{0.633f, 0.727811f, 0.633f},
-            .shininess = kOpenGlShininess * 0.6f,
+            .shininess = kShininess * 0.6f,
         };
       }
       case Type::kGold: {
@@ -60,7 +60,7 @@ struct Material {
             .ambient = glm::vec3{0.24725f, 0.1995f, 0.0745f},
             .diffuse = glm::vec3{0.75164f, 0.60648f, 0.22648f},
             .specular = glm::vec3{0.628281f, 0.555802f, 0.366065f},
-            .shininess = kOpenGlShininess * 0.4f,
+            .shininess = kShininess * 0.4f,
         };
       }
       case Type::kJade: {
@@ -68,7 +68,7 @@ struct Material {
             .ambient = glm::vec3{0.135f, 0.2225f, 0.1575f},
             .diffuse = glm::vec3{0.54f, 0.89f, 0.63f},
             .specular = glm::vec3{0.316228f, 0.316228f, 0.316228f},
-            .shininess = kOpenGlShininess * 0.1f,
+            .shininess = kShininess * 0.1f,
         };
       }
       case Type::kObsidian: {
@@ -76,7 +76,7 @@ struct Material {
             .ambient = glm::vec3{0.05375f, 0.05f, 0.06625f},
             .diffuse = glm::vec3{0.18275f, 0.17f, 0.22525f},
             .specular = glm::vec3{0.332741f, 0.328634f, 0.346435f},
-            .shininess = kOpenGlShininess * 0.3f,
+            .shininess = kShininess * 0.3f,
         };
       }
       case Type::kPearl: {
@@ -84,7 +84,7 @@ struct Material {
             .ambient = glm::vec3{0.25f, 0.20725f, 0.20725f},
             .diffuse = glm::vec3{1.0f, 0.829f, 0.829f},
             .specular = glm::vec3{0.296648f, 0.296648f, 0.296648f},
-            .shininess = kOpenGlShininess * 0.088f,
+            .shininess = kShininess * 0.088f,
         };
       }
       case Type::kRuby: {
@@ -92,7 +92,7 @@ struct Material {
             .ambient = glm::vec3{0.1745f, 0.01175f, 0.01175f},
             .diffuse = glm::vec3{0.61424f, 0.04136f, 0.04136f},
             .specular = glm::vec3{0.727811f, 0.626959f, 0.626959f},
-            .shininess = kOpenGlShininess * 0.6f,
+            .shininess = kShininess * 0.6f,
         };
       }
       case Type::kSilver: {
@@ -100,7 +100,7 @@ struct Material {
             .ambient = glm::vec3{0.19225f, 0.19225f, 0.19225f},
             .diffuse = glm::vec3{0.50754f, 0.50754f, 0.50754f},
             .specular = glm::vec3{0.508273f, 0.508273f, 0.508273f},
-            .shininess = kOpenGlShininess * 0.4f,
+            .shininess = kShininess * 0.4f,
         };
       }
       case Type::kTurquoise: {
@@ -108,7 +108,7 @@ struct Material {
             .ambient = glm::vec3{0.1f, 0.18725f, 0.1745f},
             .diffuse = glm::vec3{0.396f, 0.74151f, 0.69102f},
             .specular = glm::vec3{0.297254f, 0.30829f, 0.306678f},
-            .shininess = kOpenGlShininess * 0.1f,
+            .shininess = kShininess * 0.1f,
         };
       }
     }
