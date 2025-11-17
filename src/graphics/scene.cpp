@@ -77,9 +77,9 @@ Scene::Scene(const Window& window, const std::filesystem::path& obj_filepath)
 }
 
 void Scene::Render() const {
-  const auto model_view_transform = camera_.GetViewTransform() * mesh_.model_transform();
+  const auto model_view_transform = camera_.view_transform() * mesh_.model_transform();
   shader_program_.SetUniform("model_view_transform", model_view_transform);
-  shader_program_.SetUniform("projection_transform", camera_.GetProjectionTransform());
+  shader_program_.SetUniform("projection_transform", camera_.projection_transform());
 
   static constexpr auto kDefaultClearColorValue = 0.1f;
   glClearColor(kDefaultClearColorValue, kDefaultClearColorValue, kDefaultClearColorValue, 1.0f);

@@ -1,6 +1,8 @@
 #ifndef GRAPHICS_ARC_CAMERA_H_
 #define GRAPHICS_ARC_CAMERA_H_
 
+#include <optional>
+
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
@@ -23,8 +25,10 @@ class ArcCamera {
 public:
   ArcCamera(const glm::vec3& position, const glm::vec3& target, const ViewFrustum& view_frustum);
 
-  [[nodiscard]] glm::mat4 GetViewTransform() const;
-  [[nodiscard]] glm::mat4 GetProjectionTransform() const;
+  void set_aspect_ratio(float aspect_ratio) noexcept;
+
+  [[nodiscard]] const glm::mat4& view_transform() const;
+  [[nodiscard]] const glm::mat4& projection_transform() const;
 
   void Translate(float dx, float dy, float dz);
   void Rotate(float theta, float phi);
@@ -34,6 +38,8 @@ private:
   SphericalCoordinates position_;
   glm::vec3 target_{0.0f};
   ViewFrustum view_frustum_;
+  mutable std::optional<glm::mat4> view_transform_;
+  mutable std::optional<glm::mat4> projection_transform_;
 };
 
 }  // namespace gfx

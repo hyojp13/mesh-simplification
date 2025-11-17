@@ -1,8 +1,8 @@
 #include "app.h"  // NOLINT(build/include_subdir)
 
 #include <optional>
-#include <utility>
 
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
 #include "geometry/mesh_simplifier.h"
@@ -14,7 +14,7 @@ namespace app {
 
 namespace {
 
-void HandleKeyEvent(const gfx::Window& window, gfx::Mesh& mesh, const int key, const int action) {
+void HandleKeyEvent(gfx::Window& window, gfx::Mesh& mesh, const int key, const int action) {
   if (action != GLFW_PRESS) return;
 
   switch (key) {
@@ -56,22 +56,30 @@ void HandleCursorEvent(const gfx::Window& window, gfx::ArcCamera& camera, const 
   }
 }
 
-void HandleScrollEvent(gfx::ArcCamera& camera, const float y) {
+void HandleScrollEvent(gfx::ArcCamera& camera, const float y_offset) {
   static constexpr auto kZoomSpeed = 0.015625f;
-  camera.Zoom(kZoomSpeed * -y);
+  camera.Zoom(kZoomSpeed * -y_offset);
+}
+
+void HandleWindowResizeEvent(gfx::ArcCamera& camera, const gfx::Window::Size window_size) {
+  if (const auto& [width, height] = window_size; height > 0) {
+    const float aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
+    camera.set_aspect_ratio(aspect_ratio);
+  }
 }
 
 }  // namespace
 
-void Run(const char* const app_name, const std::pair<int, int> window_size, const std::pair<int, int> opengl_version) {
+void Run(const char* const app_name, const gfx::Window::Size window_size, const gfx::OpenGlVersion opengl_version) {
   gfx::Window window{app_name, window_size, opengl_version};
   gfx::Scene scene{window, "assets/models/bunny.obj"};
   auto& camera = scene.camera();
   auto& mesh = scene.mesh();
 
-  window.OnKeyEvent([&window, &mesh](const auto key, const auto action) { HandleKeyEvent(window, mesh, key, action); });
-  window.OnCursorEvent([&window, &camera](const auto x, const auto y) { HandleCursorEvent(window, camera, x, y); });
-  window.OnScrollEvent([&camera](const auto y_offset) { HandleScrollEvent(camera, y_offset); });
+  window.OnKeyEvent([&](const auto key, const auto action) { HandleKeyEvent(window, mesh, key, action); });
+  window.OnCursorEvent([&](const auto x, const auto y) { HandleCursorEvent(window, camera, x, y); });
+  window.OnScrollEvent([&](const auto /*x_offset*/, const auto y_offset) { HandleScrollEvent(camera, y_offset); });
+  window.OnResizeEvent([&](const auto next_window_size) { HandleWindowResizeEvent(camera, next_window_size); });
 
   // NOLINTBEGIN(*-magic-numbers)
   mesh.Translate(glm::vec3{0.2f, -0.3f, 0.0f});
@@ -80,8 +88,9 @@ void Run(const char* const app_name, const std::pair<int, int> window_size, cons
   // NOLINTEND(*-magic-numbers)
 
   while (!window.IsClosed()) {
-    window.Update();
+    gfx::Window::PollEvents();
     scene.Render();
+    window.SwapBuffers();
   }
 }
 

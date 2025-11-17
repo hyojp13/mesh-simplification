@@ -1,11 +1,11 @@
 #ifndef APP_H_
 #define APP_H_
 
-#include <utility>
+#include "graphics/window.h"
 
 namespace app {
 
-void Run(const char* app_name, std::pair<int, int> window_size, std::pair<int, int> opengl_version);
+void Run(const char* app_name, gfx::Window::Size window_size, gfx::OpenGlVersion opengl_version);
 
 }
 

@@ -29,25 +29,45 @@ glm::vec3 ToCartesianCoordinates(const SphericalCoordinates& spherical_coordinat
   return glm::vec3{x, y, z};
 }
 
+glm::mat4 GetViewTransform(const SphericalCoordinates& position, const glm::vec3& target) {
+  static constexpr glm::vec3 kUp{0.0f, 1.0f, 0.0f};
+  const auto cartesian_position = target + ToCartesianCoordinates(position);
+  return glm::lookAt(cartesian_position, target, kUp);
+}
+
+glm::mat4 GetProjectionTransform(const ViewFrustum& view_frustum) {
+  const auto [field_of_view_y, aspect_ratio, z_near, z_far] = view_frustum;
+  return glm::perspective(field_of_view_y, aspect_ratio, z_near, z_far);
+}
+
 }  // namespace
 
 ArcCamera::ArcCamera(const glm::vec3& position, const glm::vec3& target, const ViewFrustum& view_frustum)
     : position_{ToSphericalCoordinates(position - target)}, target_{target}, view_frustum_{view_frustum} {}
 
-glm::mat4 ArcCamera::GetViewTransform() const {
-  static constexpr glm::vec3 kUp{0.0f, 1.0f, 0.0f};
-  const auto cartesian_position = target_ + ToCartesianCoordinates(position_);
-  return glm::lookAt(cartesian_position, target_, kUp);
+void ArcCamera::set_aspect_ratio(const float aspect_ratio) noexcept {
+  view_frustum_.aspect_ratio = aspect_ratio;
+  projection_transform_ = std::nullopt;
 }
 
-glm::mat4 ArcCamera::GetProjectionTransform() const {
-  const auto [field_of_view_y, aspect_ratio, z_near, z_far] = view_frustum_;
-  return glm::perspective(field_of_view_y, aspect_ratio, z_near, z_far);
+const glm::mat4& ArcCamera::view_transform() const {
+  if (!view_transform_.has_value()) {
+    view_transform_ = GetViewTransform(position_, target_);
+  }
+  return *view_transform_;
+}
+
+const glm::mat4& ArcCamera::projection_transform() const {
+  if (!projection_transform_.has_value()) {
+    projection_transform_ = GetProjectionTransform(view_frustum_);
+  }
+  return *projection_transform_;
 }
 
 void ArcCamera::Translate(const float dx, const float dy, const float dz) {
-  const glm::mat3 orientation = GetViewTransform();
+  const glm::mat3 orientation = view_transform();
   target_ += glm::vec3{dx, dy, dz} * orientation;  // NOLINT(whitespace/braces)
+  view_transform_ = std::nullopt;
 }
 
 void ArcCamera::Rotate(const float theta, const float phi) {
@@ -55,11 +75,13 @@ void ArcCamera::Rotate(const float theta, const float phi) {
   static constexpr auto kPhiMax = glm::radians(89.0f);
   position_.theta = std::fmod(position_.theta + theta, kThetaMax);
   position_.phi = std::clamp(position_.phi + phi, -kPhiMax, kPhiMax);
+  view_transform_ = std::nullopt;
 }
 
 void ArcCamera::Zoom(const float rate) {
   static constexpr auto kEpsilon = std::numeric_limits<float>::epsilon();
   position_.radius = std::max(position_.radius + rate, kEpsilon);
+  view_transform_ = std::nullopt;
 }
 
 }  // namespace gfx
