@@ -17,16 +17,16 @@ class Vertex;
 
 /**
  * @brief An edge centric data structure used to represent a triangle mesh.
- * @details A half-edge mesh is comprised of directional half-edges that refer to the next edge in a triangle in
- *          counter-clockwise order in addition to the vertex at the head of the edge. A half-edge also provides a
- *          pointer to its flip edge which represents the same edge in the opposite direction. Using just these
- *          three pointers, one can effectively traverse and modify edges in a triangle mesh.
+ * @details A half-edge mesh consists of directional half-edges which model connectivity between vertices, edges, and
+ *          faces in a triangle mesh. Each half-edge contains pointers to the vertex at the head of the edge, the next
+ *          half-edge of a triangle face in counter-clockwise order, and the flip edge which shares the same vertices in
+ *          the opposite direction which enable efficient traversal of the mesh topology.
  */
 class HalfEdgeMesh {
 public:
   /**
    * @brief Creates a half-edge mesh.
-   * @param mesh An indexed triangle mesh to construct the half-edge mesh from.
+   * @param mesh The triangle mesh to construct the half-edge mesh from.
    */
   explicit HalfEdgeMesh(const Mesh& mesh);
 

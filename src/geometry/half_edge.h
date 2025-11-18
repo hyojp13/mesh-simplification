@@ -52,7 +52,7 @@ public:
     next_ = next;
   }
 
-  /** @brief Gets the face created by three counter-clockwise @c next iterations starting from this half-edge. */
+  /** @brief Gets the triangle face formed by three counter-clockwise iterations of @ref next. */
   [[nodiscard]] std::shared_ptr<Face> face() const noexcept {
     assert(!face_.expired());
     return face_.lock();

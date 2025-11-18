@@ -21,7 +21,7 @@ public:
   explicit Vertex(const glm::vec3& position) noexcept : position_{position} {}
 
   /**
-   * @brief Initializes a vertex.
+   * @brief Creates a vertex.
    * @param id The vertex ID.
    * @param position The vertex position.
    */
