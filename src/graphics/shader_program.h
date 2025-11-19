@@ -19,8 +19,8 @@ class ShaderProgram {
 public:
   /**
    * @brief Creates a shader program.
-   * @param vertex_shader_filepath The vertex shader filepath.
-   * @param fragment_shader_filepath The fragment shader filepath.
+   * @param vertex_shader_filepath The GLSL vertex shader filepath.
+   * @param fragment_shader_filepath The GLSL fragment shader filepath.
    * @throw std::runtime_error Thrown if the shader program could not be created.
    */
   ShaderProgram(const std::filesystem::path& vertex_shader_filepath,
@@ -87,8 +87,8 @@ private:
     GLuint id;  // NOLINT(misc-non-private-member-variables-in-classes): allow direct access to internal shader class
   };
 
-  // this is required to enable heterogeneous lookup which allows searching a std::unordered_map<std::string, T> using
-  // std::string_view keys without unnecessary allocations from constructing a temporary std::string
+  // this is required for heterogeneous lookup which improves performance by avoiding unnecessary allocations when
+  // searching a std::unordered_map<std::string, T> with std::string_view keys.
   struct StringViewHash {
     using is_transparent = void;
     static constexpr std::hash<std::string_view> kStringViewHash;
@@ -96,7 +96,7 @@ private:
     std::size_t operator()(const std::string_view value) const noexcept { return kStringViewHash(value); }
   };
 
-  // this is required as a workaround to ensure that static assertions in "if constexpr" expressions are well-formed
+  // this is required for a workaround to ensure that static assertions in "if constexpr" expressions are well-formed
   template <typename>
   static constexpr std::false_type kAssertFalse{};
 

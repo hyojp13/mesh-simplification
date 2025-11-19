@@ -72,7 +72,7 @@ void HandleWindowResizeEvent(gfx::ArcCamera& camera, const gfx::Window::Size win
 
 void Run(const char* const app_name, const gfx::Window::Size window_size, const gfx::OpenGlVersion opengl_version) {
   gfx::Window window{app_name, window_size, opengl_version};
-  gfx::Scene scene{window, "assets/models/bunny.obj"};
+  gfx::Scene scene{"assets/models/bunny.obj", window.GetAspectRatio()};
   auto& camera = scene.camera();
   auto& mesh = scene.mesh();
 

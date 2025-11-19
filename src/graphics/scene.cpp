@@ -7,7 +7,6 @@
 #include "graphics/material.h"
 #include "graphics/obj_loader.h"
 #include "graphics/shader_program.h"
-#include "graphics/window.h"
 
 namespace gfx {
 
@@ -67,8 +66,8 @@ void SetMaterial(const ShaderProgram& shader_program) {
 
 }  // namespace
 
-Scene::Scene(const Window& window, const std::filesystem::path& obj_filepath)
-    : camera_{CreateCamera(window.GetAspectRatio())},
+Scene::Scene(const std::filesystem::path& obj_filepath, const float aspect_ratio)
+    : camera_{CreateCamera(aspect_ratio)},
       mesh_{obj_loader::LoadMesh(obj_filepath)},
       shader_program_{"assets/shaders/mesh_vertex.glsl", "assets/shaders/mesh_fragment.glsl"} {
   shader_program_.Enable();
