@@ -61,9 +61,13 @@ void HandleScrollEvent(gfx::ArcCamera& camera, const float y_offset) {
   camera.Zoom(kZoomSpeed * -y_offset);
 }
 
+float GetAspectRatio(const gfx::Window::Size window_size) {
+  const auto [width, height] = window_size;
+  return height > 0 ? static_cast<float>(width) / static_cast<float>(height) : 0;
+}
+
 void HandleWindowResizeEvent(gfx::ArcCamera& camera, const gfx::Window::Size window_size) {
-  if (const auto& [width, height] = window_size; height > 0) {
-    const float aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
+  if (const auto aspect_ratio = GetAspectRatio(window_size); aspect_ratio > 0) {
     camera.set_aspect_ratio(aspect_ratio);
   }
 }
@@ -72,7 +76,7 @@ void HandleWindowResizeEvent(gfx::ArcCamera& camera, const gfx::Window::Size win
 
 void Run(const char* const app_name, const gfx::Window::Size window_size, const gfx::OpenGlVersion opengl_version) {
   gfx::Window window{app_name, window_size, opengl_version};
-  gfx::Scene scene{"assets/models/bunny.obj", window.GetAspectRatio()};
+  gfx::Scene scene{"assets/models/bunny.obj", GetAspectRatio(window.GetSize())};
   auto& camera = scene.camera();
   auto& mesh = scene.mesh();
 

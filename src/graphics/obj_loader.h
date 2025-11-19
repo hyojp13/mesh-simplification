@@ -10,7 +10,7 @@ namespace obj_loader {
 
 /**
  * @brief Loads a triangle mesh from an .obj file.
- * @param obj_filepath The .obj filepath to load.
+ * @param obj_filepath The .obj filepath for the triangle mesh to load.
  * @return A mesh defined by the position, normals, texture coordinates, and indices specified in the .obj file.
  * @throw std::runtime_error Thrown if the file cannot be opened.
  * @throw std::invalid_argument Thrown if the .obj file is malformed or contains an unsupported format.
