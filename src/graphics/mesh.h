@@ -90,14 +90,14 @@ public:
   void Translate(const glm::vec3& translation) { model_transform_ = glm::translate(model_transform_, translation); }
 
 private:
-  GLuint vertex_array_ = 0;
-  GLuint vertex_buffer_ = 0;
-  GLuint element_buffer_ = 0;
   std::vector<glm::vec3> positions_;
   std::vector<glm::vec3> normals_;
   std::vector<glm::vec2> texcoords_;
   std::vector<GLuint> indices_;
   glm::mat4 model_transform_{0.0f};
+  GLuint vertex_array_ = 0;
+  GLuint vertex_buffer_ = 0;
+  GLuint element_buffer_ = 0;
 };
 
 }  // namespace gfx
