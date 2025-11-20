@@ -16,10 +16,8 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
 target_link_libraries(mesh_simplification PRIVATE OpenGL::GL
-                                                  common_dbg_asan
-                                                  common_glm_definitions
-                                                  common_warnings
                                                   glfw
+                                                  glm_compile_definitions
                                                   glm::glm
                                                   unofficial::gl3w::gl3w)
 

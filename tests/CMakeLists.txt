@@ -14,10 +14,8 @@ find_package(glm CONFIG REQUIRED)
 
 target_link_libraries(mesh_simplification_tests PRIVATE GTest::gtest_main
                                                         OpenGL::GL
-                                                        common_dbg_asan
-                                                        common_glm_definitions
-                                                        common_warnings
                                                         glfw
+                                                        glm_compile_definitions
                                                         glm::glm
                                                         unofficial::gl3w::gl3w)
 

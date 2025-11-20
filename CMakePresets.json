@@ -1,21 +1,22 @@
 {
   "version": 3,
-  "cmakeMinimumRequired": {
-    "major": 3,
-    "minor": 22,
-    "patch": 0
-  },
   "configurePresets": [
     {
       "name": "default",
       "hidden": true,
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/out/build/${presetName}",
-      "installDir": "${sourceDir}/out/install/${presetName}",
-      "toolchainFile": "${sourceDir}/third_party/vcpkg/scripts/buildsystems/vcpkg.cmake",
       "architecture": {
         "value": "x64",
         "strategy": "external"
+      },
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "toolchainFile": "${sourceDir}/third_party/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD_REQUIRED": true,
+        "CMAKE_CXX_EXTENSIONS": false,
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true
       }
     },
     {
@@ -23,7 +24,11 @@
       "hidden": true,
       "inherits": "default",
       "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "cl.exe"
+        "CMAKE_CXX_COMPILER": "cl.exe",
+        "WIN32_LEAN_AND_MEAN": true
+      },
+      "environment": {
+        "CXX_FLAGS": "/W4 /WX"
       },
       "condition": {
         "type": "equals",
@@ -36,9 +41,10 @@
       "hidden": true,
       "inherits": "default",
       "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
-        "CLANG_DEFAULT_CXX_STDLIB": "libc++",
-        "CLANG_DEFAULT_RTLIB": "compiler-rt"
+        "CMAKE_CXX_COMPILER": "clang++"
+      },
+      "environment": {
+        "CXX_FLAGS": "-Wall -Werror -Wextra -Wpedantic"
       },
       "condition": {
         "type": "equals",
@@ -66,12 +72,24 @@
       }
     },
     {
+      "name": "clang-tidy",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_CXX_CLANG_TIDY": "clang-tidy;--config-file=${sourceDir}/.clang-tidy;-p=${sourceDir}/out/build/${presetName}"
+      }
+    },
+    {
       "name": "windows-debug",
       "inherits": [
         "windows",
         "debug"
-      ],
+      ]
+    },
+    {
+      "name": "windows-debug-asan",
+      "inherits": "windows-debug",
       "cacheVariables": {
+        "CXX_FLAGS": "/fsanitize=address",
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/vcpkg-triplets",
         "VCPKG_TARGET_TRIPLET": "x64-windows-asan"
       }
@@ -81,7 +99,11 @@
       "inherits": [
         "windows",
         "release"
-      ]
+      ],
+      "cacheVariables": {
+        "CXX_FLAGS": "/fp:fast /GL",
+        "CXX_LINKER_FLAGS": "/LTCG:INCREMENTAL"
+      }
     },
     {
       "name": "linux-debug",
@@ -91,11 +113,23 @@
       ]
     },
     {
+      "name": "linux-debug-asan",
+      "inherits": "linux-debug",
+      "cacheVariables": {
+        "CXX_FLAGS": "-fsanitize=address",
+        "CXX_LINKER_FLAGS": "-fsanitize=address"
+      }
+    },
+    {
       "name": "linux-release",
       "inherits": [
         "linux",
         "release"
-      ]
+      ],
+      "cacheVariables": {
+        "CXX_FLAGS": "-O3 -ffast-math -flto",
+        "CXX_LINKER_FLAGS": "-flto"
+      }
     }
   ],
   "buildPresets": [
@@ -104,12 +138,20 @@
       "configurePreset": "windows-debug"
     },
     {
+      "name": "windows-debug-asan",
+      "configurePreset": "windows-debug-asan"
+    },
+    {
       "name": "windows-release",
       "configurePreset": "windows-release"
     },
     {
       "name": "linux-debug",
       "configurePreset": "linux-debug"
+    },
+    {
+      "name": "linux-debug-asan",
+      "configurePreset": "linux-debug-asan"
     },
     {
       "name": "linux-release",
@@ -122,12 +164,20 @@
       "configurePreset": "windows-debug"
     },
     {
+      "name": "windows-debug-asan",
+      "configurePreset": "windows-debug-asan"
+    },
+    {
       "name": "windows-release",
       "configurePreset": "windows-release"
     },
     {
       "name": "linux-debug",
       "configurePreset": "linux-debug"
+    },
+    {
+      "name": "linux-debug-asan",
+      "configurePreset": "linux-debug-asan"
     },
     {
       "name": "linux-release",
