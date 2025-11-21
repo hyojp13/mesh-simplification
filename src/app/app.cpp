@@ -1,4 +1,4 @@
-#include "app.h"  // NOLINT(build/include_subdir)
+#include "app/app.h"
 
 #include <optional>
 

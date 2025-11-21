@@ -2,7 +2,7 @@
 #include <exception>
 #include <iostream>
 
-#include "app.h"  // NOLINT(build/include_subdir)
+#include "app/app.h"
 
 int main() {  // NOLINT(bugprone-exception-escape): exceptions are not enabled for standard error stream
   try {
