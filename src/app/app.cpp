@@ -48,7 +48,7 @@ void HandleCursorEvent(const gfx::Window& window, gfx::ArcCamera& camera, const 
       static constexpr auto kTranslationSpeed = 0.001953125f;
       const auto drag_direction = cursor_position - *prev_cursor_position;
       const auto translation = kTranslationSpeed * glm::vec2{-drag_direction.x, drag_direction.y};
-      camera.Translate(translation.x, translation.y, 0.0f);
+      camera.Translate(glm::vec3{translation, 0.0f});
     }
     prev_cursor_position = cursor_position;
   } else {

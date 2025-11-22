@@ -12,6 +12,8 @@ namespace gfx {
 
 namespace {
 
+using SphericalCoordinates = ArcCamera::SphericalCoordinates;
+
 SphericalCoordinates ToSphericalCoordinates(const glm::vec3& cartesian_coordinates) {
   const auto radius = glm::length(cartesian_coordinates);
   return radius == 0.0f ? SphericalCoordinates{.radius = 0.0f, .theta = 0.0f, .phi = 0.0f}
@@ -64,9 +66,9 @@ const glm::mat4& ArcCamera::projection_transform() const {
   return *projection_transform_;
 }
 
-void ArcCamera::Translate(const float dx, const float dy, const float dz) {
+void ArcCamera::Translate(const glm::vec3& view_translation) {
   const glm::mat3 orientation = view_transform();
-  target_ += glm::vec3{dx, dy, dz} * orientation;  // NOLINT(whitespace/braces)
+  target_ += view_translation * orientation;
   view_transform_ = std::nullopt;
 }
 
