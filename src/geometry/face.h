@@ -4,8 +4,7 @@
 #include <cassert>
 #include <memory>
 
-#include <glm/vec3.hpp>
-
+#include "math3d.h"
 #include "geometry/vertex.h"
 
 namespace gfx {
@@ -40,23 +39,23 @@ public:
   }
 
   /** @brief Gets the face normal. */
-  [[nodiscard]] const glm::vec3& normal() const noexcept { return normal_; }
+  [[nodiscard]] const Vec3& normal() const noexcept { return normal_; }
 
   /** @brief Gets the face area. */
-  [[nodiscard]] float area() const noexcept { return area_; }
+  [[nodiscard]] double area() const noexcept { return area_; }
 
   /** @brief Defines the face equality operator. */
   friend bool operator==(const Face& lhs, const Face& rhs) noexcept {
     return lhs.v0() == rhs.v0() && lhs.v1() == rhs.v1() && lhs.v2() == rhs.v2();
   }
 
-  /** @brief Gets the face hash value. */
-  friend std::size_t hash_value(const Face& face) noexcept { return hash_value(*face.v0(), *face.v1(), *face.v2()); }
+  /** @brief Gets a canonical key for the face. */
+  friend FaceKey MakeFaceKey(const Face& face) noexcept { return MakeFaceKey(*face.v0(), *face.v1(), *face.v2()); }
 
 private:
   std::weak_ptr<const Vertex> v0_, v1_, v2_;
-  glm::vec3 normal_;
-  float area_;
+  Vec3 normal_;
+  double area_;
 };
 
 /** @brief A type alias for a std::shared_ptr<Face>. */

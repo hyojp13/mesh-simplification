@@ -83,10 +83,8 @@ public:
     return lhs.vertex() == rhs.vertex() && lhs.flip()->vertex() == rhs.flip()->vertex();
   }
 
-  /** @brief Gets the half-edge hash value. */
-  friend std::size_t hash_value(const HalfEdge& edge) noexcept {
-    return hash_value(*edge.flip()->vertex(), *edge.vertex());
-  }
+  /** @brief Gets a canonical key for the half-edge. */
+  friend EdgeKey MakeEdgeKey(const HalfEdge& edge) noexcept { return MakeEdgeKey(*edge.flip()->vertex(), *edge.vertex()); }
 
 private:
   std::weak_ptr<Vertex> vertex_;

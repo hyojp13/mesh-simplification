@@ -3,11 +3,9 @@
 
 #include <map>
 #include <memory>
-#include <unordered_map>
-
-#include <glm/mat4x4.hpp>
 
 #include "geometry/half_edge.h"
+#include "mesh.h"
 
 namespace gfx {
 class Face;
@@ -37,10 +35,10 @@ public:
   [[nodiscard]] const std::map<int, SharedVertex>& vertices() const noexcept { return vertices_; }
 
   /** @brief Gets a mapping of mesh half-edges by hash key. */
-  [[nodiscard]] const std::unordered_map<std::size_t, SharedHalfEdge>& edges() const noexcept { return edges_; }
+  [[nodiscard]] const std::map<EdgeKey, SharedHalfEdge>& edges() const noexcept { return edges_; }
 
   /** @brief Gets a mapping of mesh faces by hash key. */
-  [[nodiscard]] const std::unordered_map<std::size_t, SharedFace>& faces() const noexcept { return faces_; }
+  [[nodiscard]] const std::map<FaceKey, SharedFace>& faces() const noexcept { return faces_; }
 
   /**
    * @brief Performs edge contraction.
@@ -53,9 +51,8 @@ public:
 
 private:
   std::map<int, SharedVertex> vertices_;
-  std::unordered_map<std::size_t, SharedHalfEdge> edges_;
-  std::unordered_map<std::size_t, SharedFace> faces_;
-  glm::mat4 model_transform_;
+  std::map<EdgeKey, SharedHalfEdge> edges_;
+  std::map<FaceKey, SharedFace> faces_;
 };
 
 }  // namespace gfx

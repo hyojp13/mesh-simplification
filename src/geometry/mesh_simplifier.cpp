@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <cassert>
 #include <chrono>
+#include <cmath>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <queue>
 #include <ranges>
@@ -12,13 +14,10 @@
 #include <utility>
 #include <vector>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_access.hpp>
-
 #include "geometry/half_edge.h"
 #include "geometry/half_edge_mesh.h"
 #include "geometry/vertex.h"
-#include "graphics/mesh.h"
+#include "mesh.h"
 
 namespace gfx {
 
@@ -57,21 +56,21 @@ std::shared_ptr<const HalfEdge> GetMinEdge(const std::shared_ptr<const HalfEdge>
 }
 
 /** @brief Computes the error quadric for a vertex. */
-glm::mat4 ComputeQuadric(const Vertex& v0) {
-  glm::mat4 quadric{0.0f};
+Mat4 ComputeQuadric(const Vertex& v0) {
+  Mat4 quadric{};
   auto edgei0 = v0.edge();
   do {
     const auto& position = v0.position();
     const auto& normal = edgei0->face()->normal();
-    const glm::vec4 plane{normal, -glm::dot(position, normal)};
-    quadric += glm::outerProduct(plane, plane);
+    const Vec4 plane{normal, -Dot(position, normal)};
+    quadric += OuterProduct(plane, plane);
     edgei0 = edgei0->next()->flip();
   } while (edgei0 != v0.edge());
   return quadric;
 }
 
 /** @brief Gets the error quadric for a given vertex. */
-const glm::mat4& GetQuadric(const Vertex& v0, const std::unordered_map<std::size_t, glm::mat4>& quadrics) {
+const Mat4& GetQuadric(const Vertex& v0, const std::unordered_map<std::size_t, Mat4>& quadrics) {
   const auto q0_iterator = quadrics.find(v0.id());
   assert(q0_iterator != quadrics.end());
   return q0_iterator->second;
@@ -85,7 +84,7 @@ const glm::mat4& GetQuadric(const Vertex& v0, const std::unordered_map<std::size
  */
 std::pair<std::shared_ptr<Vertex>, float> GetOptimalEdgeContractionVertex(
     const HalfEdge& edge01,
-    const std::unordered_map<std::size_t, glm::mat4>& quadrics) {
+    const std::unordered_map<std::size_t, Mat4>& quadrics) {
   const auto v0 = edge01.flip()->vertex();
   const auto v1 = edge01.vertex();
 
@@ -93,23 +92,16 @@ std::pair<std::shared_ptr<Vertex>, float> GetOptimalEdgeContractionVertex(
   const auto& q1 = GetQuadric(*v1, quadrics);
 
   const auto q01 = q0 + q1;
-  const glm::mat3 Q{q01};
-  const glm::vec3 b = glm::column(q01, 3);
-  const auto d = q01[3][3];
+  auto position = (v0->position() + v1->position()) / 2.0;
 
-  // if the upper 3x3 matrix of the error quadric is not invertible, average the edge vertices
-  if (static constexpr auto kEpsilon = 1.0e-3f; fabs(determinant(Q)) < kEpsilon || fabs(d) < kEpsilon) {
-    const auto position = (v0->position() + v1->position()) / 2.0f;
-    return std::pair{std::make_shared<Vertex>(position), 0.0f};
+  if (static constexpr auto kEpsilon = 1.0e-8; std::fabs(Determinant(UpperLeft3x3(q01))) >= kEpsilon) {
+    if (const auto optimal_position = SolveLinearSystem(UpperLeft3x3(q01), -RightColumnXYZ(q01), kEpsilon);
+        optimal_position.has_value()) {
+      position = *optimal_position;
+    }
   }
 
-  const auto Q_inv = glm::inverse(Q);
-  const auto D_inv = glm::column(glm::mat4{Q_inv}, 3, glm::vec4{-1.0f / d * Q_inv * b, 1.0f / d});
-
-  auto position = D_inv * glm::vec4{0.0f, 0.0f, 0.0f, 1.0f};
-  position /= position.w;
-
-  return std::pair{std::make_shared<Vertex>(position), glm::dot(position, q01 * position)};
+  return std::pair{std::make_shared<Vertex>(position), static_cast<float>(QuadricError(q01, position))};
 }
 
 /**
@@ -140,16 +132,16 @@ bool WillDegenerate(const std::shared_ptr<const HalfEdge>& edge01) {
 
 }  // namespace
 
-Mesh mesh::Simplify(const Mesh& mesh, const float rate) {
+Mesh mesh::Simplify(const Mesh& mesh, const double rate) {
   if (rate < 0.0f || rate > 1.0f) {
-    throw std::invalid_argument{std::format("Invalid mesh simplification rate: {}", rate)};
+    throw std::invalid_argument{"Invalid mesh simplification rate"};
   }
 
   const auto start_time = std::chrono::high_resolution_clock::now();
   HalfEdgeMesh half_edge_mesh{mesh};
 
   // compute error quadrics for each vertex
-  std::unordered_map<std::size_t, glm::mat4> quadrics;
+  std::unordered_map<std::size_t, Mat4> quadrics;
   for (const auto& [vertex_id, vertex] : half_edge_mesh.vertices()) {
     quadrics.emplace(vertex_id, ComputeQuadric(*vertex));
   }
@@ -162,13 +154,13 @@ Mesh mesh::Simplify(const Mesh& mesh, const float rate) {
       edge_contractions{kMinCostComparator};
 
   // this is used to invalidate existing priority queue entries as edges are updated or removed from the mesh
-  std::unordered_map<std::size_t, std::shared_ptr<EdgeContraction>> valid_edges;
+  std::map<EdgeKey, std::shared_ptr<EdgeContraction>> valid_edges;
 
   // compute the optimal vertex position that minimizes the cost of contracting each edge
   for (const auto& edge : half_edge_mesh.edges() | std::views::values) {
     const auto min_edge = GetMinEdge(edge);
 
-    if (const auto min_edge_key = hash_value(*min_edge); !valid_edges.contains(min_edge_key)) {
+    if (const auto min_edge_key = MakeEdgeKey(*min_edge); !valid_edges.contains(min_edge_key)) {
       const auto [vertex, cost] = GetOptimalEdgeContractionVertex(*edge, quadrics);
       const auto edge_contraction = std::make_shared<EdgeContraction>(edge, vertex, cost);
       edge_contractions.push(edge_contraction);
@@ -178,8 +170,9 @@ Mesh mesh::Simplify(const Mesh& mesh, const float rate) {
 
   // stop mesh simplification if the number of triangles has been sufficiently reduced
   const auto initial_face_count = half_edge_mesh.faces().size();
-  const auto is_simplified = [&, target_face_count = (1.0f - rate) * static_cast<float>(initial_face_count)] {
-    return edge_contractions.empty() || half_edge_mesh.faces().size() < static_cast<std::size_t>(target_face_count);
+  const auto target_face_count = static_cast<std::size_t>(std::floor((1.0 - rate) * initial_face_count));
+  const auto is_simplified = [&] {
+    return edge_contractions.empty() || half_edge_mesh.faces().size() <= target_face_count;
   };
 
   for (auto next_vertex_id = half_edge_mesh.vertices().size(); !is_simplified(); edge_contractions.pop()) {
@@ -206,7 +199,7 @@ Mesh mesh::Simplify(const Mesh& mesh, const float rate) {
       auto edgeji = vi->edge();
       do {
         const auto min_edge = GetMinEdge(edgeji);
-        if (const auto iterator = valid_edges.find(hash_value(*min_edge)); iterator != valid_edges.end()) {
+        if (const auto iterator = valid_edges.find(MakeEdgeKey(*min_edge)); iterator != valid_edges.end()) {
           iterator->second->valid = false;
           valid_edges.erase(iterator);
         }
@@ -218,7 +211,7 @@ Mesh mesh::Simplify(const Mesh& mesh, const float rate) {
     half_edge_mesh.Contract(*edge01, v_new);
 
     // add new edge contraction candidates for edges affected by the edge contraction
-    std::unordered_map<std::size_t, std::shared_ptr<const HalfEdge>> visited_edges;
+    std::map<EdgeKey, std::shared_ptr<const HalfEdge>> visited_edges;
     const auto& vi = v_new;
     auto edgeji = vi->edge();
     do {
@@ -226,7 +219,7 @@ Mesh mesh::Simplify(const Mesh& mesh, const float rate) {
       auto edgekj = vj->edge();
       do {
         const auto min_edge = GetMinEdge(edgekj);
-        if (const auto min_edge_key = hash_value(*min_edge); !visited_edges.contains(min_edge_key)) {
+        if (const auto min_edge_key = MakeEdgeKey(*min_edge); !visited_edges.contains(min_edge_key)) {
           if (const auto iterator = valid_edges.find(min_edge_key); iterator != valid_edges.end()) {
             // invalidate existing edge contraction candidate in the priority queue
             iterator->second->valid = false;
@@ -243,11 +236,10 @@ Mesh mesh::Simplify(const Mesh& mesh, const float rate) {
     } while (edgeji != vi->edge());
   }
 
-  std::clog << std::format(
-      "Mesh simplified from {} to {} triangles in {} second\n",
-      initial_face_count,
-      half_edge_mesh.faces().size(),
-      std::chrono::duration<float>{std::chrono::high_resolution_clock::now() - start_time}.count());
+  std::clog << "Mesh simplified from " << initial_face_count << " to " << half_edge_mesh.faces().size()
+            << " triangles in "
+            << std::chrono::duration<double>{std::chrono::high_resolution_clock::now() - start_time}.count()
+            << " seconds\n";
 
   return static_cast<Mesh>(half_edge_mesh);
 }

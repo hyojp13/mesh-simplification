@@ -8,12 +8,10 @@
 #include <utility>
 #include <vector>
 
-#include <glm/vec3.hpp>
-
 #include "geometry/face.h"
 #include "geometry/half_edge.h"
 #include "geometry/vertex.h"
-#include "graphics/mesh.h"
+#include "mesh.h"
 
 namespace gfx {
 
@@ -27,9 +25,9 @@ namespace {
  */
 std::shared_ptr<HalfEdge> CreateHalfEdge(const std::shared_ptr<Vertex>& v0,
                                          const std::shared_ptr<Vertex>& v1,
-                                         std::unordered_map<std::size_t, std::shared_ptr<HalfEdge>>& edges) {
-  const auto edge01_key = hash_value(*v0, *v1);
-  const auto edge10_key = hash_value(*v1, *v0);
+                                         std::map<EdgeKey, std::shared_ptr<HalfEdge>>& edges) {
+  const auto edge01_key = MakeEdgeKey(*v0, *v1);
+  const auto edge10_key = MakeEdgeKey(*v1, *v0);
 
   // prevent the creation of duplicate edges
   if (const auto iterator = edges.find(edge01_key); iterator != edges.end()) {
@@ -59,7 +57,7 @@ std::shared_ptr<HalfEdge> CreateHalfEdge(const std::shared_ptr<Vertex>& v0,
 std::shared_ptr<Face> CreateTriangle(const std::shared_ptr<Vertex>& v0,
                                      const std::shared_ptr<Vertex>& v1,
                                      const std::shared_ptr<Vertex>& v2,
-                                     std::unordered_map<std::size_t, std::shared_ptr<HalfEdge>>& edges) {
+                                     std::map<EdgeKey, std::shared_ptr<HalfEdge>>& edges) {
   const auto edge01 = CreateHalfEdge(v0, v1, edges);
   const auto edge12 = CreateHalfEdge(v1, v2, edges);
   const auto edge20 = CreateHalfEdge(v2, v0, edges);
@@ -88,8 +86,8 @@ std::shared_ptr<Face> CreateTriangle(const std::shared_ptr<Vertex>& v0,
  */
 std::shared_ptr<HalfEdge> GetHalfEdge(const Vertex& v0,
                                       const Vertex& v1,
-                                      const std::unordered_map<std::size_t, std::shared_ptr<HalfEdge>>& edges) {
-  const auto edge01_key = hash_value(v0, v1);
+                                      const std::map<EdgeKey, std::shared_ptr<HalfEdge>>& edges) {
+  const auto edge01_key = MakeEdgeKey(v0, v1);
   const auto iterator = edges.find(edge01_key);
   assert(iterator != edges.end());
   return iterator->second;
@@ -111,8 +109,8 @@ void DeleteVertex(const Vertex& vertex, std::map<int, std::shared_ptr<Vertex>>& 
  * @param edge The half-edge to delete.
  * @param edges A mapping of mesh half-edges by hash key.
  */
-void DeleteEdge(const HalfEdge& edge, std::unordered_map<std::size_t, std::shared_ptr<HalfEdge>>& edges) {
-  for (const auto edge_key : {hash_value(edge), hash_value(*edge.flip())}) {
+void DeleteEdge(const HalfEdge& edge, std::map<EdgeKey, std::shared_ptr<HalfEdge>>& edges) {
+  for (const auto& edge_key : {MakeEdgeKey(edge), MakeEdgeKey(*edge.flip())}) {
     const auto iterator = edges.find(edge_key);
     assert(iterator != edges.end());
     edges.erase(iterator);
@@ -124,8 +122,8 @@ void DeleteEdge(const HalfEdge& edge, std::unordered_map<std::size_t, std::share
  * @param face The face to delete.
  * @param faces A mapping of mesh faces by hash key.
  */
-void DeleteFace(const Face& face, std::unordered_map<std::size_t, std::shared_ptr<Face>>& faces) {
-  const auto iterator = faces.find(hash_value(face));
+void DeleteFace(const Face& face, std::map<FaceKey, std::shared_ptr<Face>>& faces) {
+  const auto iterator = faces.find(MakeFaceKey(face));
   assert(iterator != faces.end());
   faces.erase(iterator);
 }
@@ -143,8 +141,8 @@ void UpdateIncidentEdges(const Vertex& v_target,
                          const Vertex& v_start,
                          const Vertex& v_end,
                          const std::shared_ptr<Vertex>& v_new,
-                         std::unordered_map<std::size_t, std::shared_ptr<HalfEdge>>& edges,
-                         std::unordered_map<std::size_t, std::shared_ptr<Face>>& faces) {
+                         std::map<EdgeKey, std::shared_ptr<HalfEdge>>& edges,
+                         std::map<FaceKey, std::shared_ptr<Face>>& faces) {
   const auto edge_start = GetHalfEdge(v_target, v_start, edges);
   const auto edge_end = GetHalfEdge(v_target, v_end, edges);
 
@@ -156,8 +154,8 @@ void UpdateIncidentEdges(const Vertex& v_target,
     const auto vj = edgeij->vertex();
 
     auto face_new = CreateTriangle(v_new, vi, vj, edges);
-    assert(!faces.contains(hash_value(*face_new)));
-    faces.emplace(hash_value(*face_new), std::move(face_new));
+    assert(!faces.contains(MakeFaceKey(*face_new)));
+    faces.emplace(MakeFaceKey(*face_new), std::move(face_new));
 
     DeleteFace(*edge0i->face(), faces);
     DeleteEdge(*edge0i, edges);
@@ -173,20 +171,9 @@ void UpdateIncidentEdges(const Vertex& v_target,
  * @param v0 The vertex to compute the normal for.
  * @return The weighted vertex normal.
  */
-glm::vec3 ComputeWeightedVertexNormal(const Vertex& v0) {
-  glm::vec3 normal{0.0f};
-  auto edgei0 = v0.edge();
-  do {
-    const auto& face = edgei0->face();
-    normal += face->normal() * face->area();
-    edgei0 = edgei0->next()->flip();
-  } while (edgei0 != v0.edge());
-  return glm::normalize(normal);
-}
-
 }  // namespace
 
-HalfEdgeMesh::HalfEdgeMesh(const Mesh& mesh) : model_transform_{mesh.model_transform()} {
+HalfEdgeMesh::HalfEdgeMesh(const Mesh& mesh) {
   const auto& positions = mesh.positions();
   const auto& indices = mesh.indices();
 
@@ -199,26 +186,22 @@ HalfEdgeMesh::HalfEdgeMesh(const Mesh& mesh) : model_transform_{mesh.model_trans
     const auto& v1 = vertices_[static_cast<int>(indices[i + 1])];
     const auto& v2 = vertices_[static_cast<int>(indices[i + 2])];
     auto face012 = CreateTriangle(v0, v1, v2, edges_);
-    faces_.emplace(hash_value(*face012), std::move(face012));
+    faces_.emplace(MakeFaceKey(*face012), std::move(face012));
   }
 }
 
 HalfEdgeMesh::operator Mesh() const {
-  std::vector<glm::vec3> positions;
+  std::vector<Vec3> positions;
   positions.reserve(vertices_.size());
 
-  std::vector<glm::vec3> normals;
-  normals.reserve(vertices_.size());
-
-  std::vector<GLuint> indices;
+  std::vector<Index> indices;
   indices.reserve(faces_.size() * 3);
 
-  std::unordered_map<int, GLuint> index_map;
+  std::unordered_map<int, Index> index_map;
   index_map.reserve(vertices_.size());
 
-  for (GLuint i = 0; const auto& vertex : vertices_ | std::views::values) {
+  for (Index i = 0; const auto& vertex : vertices_ | std::views::values) {
     positions.push_back(vertex->position());
-    normals.push_back(ComputeWeightedVertexNormal(*vertex));
     index_map.emplace(vertex->id(), i++);  // map original vertex IDs to new index positions
   }
 
@@ -228,11 +211,11 @@ HalfEdgeMesh::operator Mesh() const {
     indices.push_back(index_map.at(face->v2()->id()));
   }
 
-  return Mesh{positions, normals, {}, indices, model_transform_};  // remapping texture coordinates is unsupported
+  return Mesh{positions, indices};
 }
 
 void HalfEdgeMesh::Contract(const HalfEdge& edge01, const std::shared_ptr<Vertex>& v_new) {
-  assert(edges_.contains(hash_value(edge01)));
+  assert(edges_.contains(MakeEdgeKey(edge01)));
   assert(!vertices_.contains(v_new->id()));
 
   const auto edge10 = edge01.flip();

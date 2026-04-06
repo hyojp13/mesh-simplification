@@ -4,8 +4,6 @@
 #include <memory>
 #include <tuple>
 
-#include <glm/geometric.hpp>
-
 namespace gfx {
 
 namespace {
@@ -34,9 +32,9 @@ Face::Face(const std::shared_ptr<const Vertex>& v0,  // NOLINT(*-member-init)
 
   const auto edge01 = v1_.lock()->position() - v0_.lock()->position();
   const auto edge02 = v2_.lock()->position() - v0_.lock()->position();
-  const auto normal = glm::cross(edge01, edge02);
+  const auto normal = Cross(edge01, edge02);
 
-  const auto normal_magnitude = glm::length(normal);
+  const auto normal_magnitude = Length(normal);
   assert(normal_magnitude != 0.0f);  // ensure face vertices are not collinear
 
   normal_ = normal / normal_magnitude;
