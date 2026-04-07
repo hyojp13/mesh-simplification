@@ -35,7 +35,11 @@ Face::Face(const std::shared_ptr<const Vertex>& v0,  // NOLINT(*-member-init)
   const auto normal = Cross(edge01, edge02);
 
   const auto normal_magnitude = Length(normal);
-  assert(normal_magnitude != 0.0f);  // ensure face vertices are not collinear
+  if (normal_magnitude == 0.0) {
+    normal_ = Vec3{};
+    area_ = 0.0;
+    return;
+  }
 
   normal_ = normal / normal_magnitude;
   area_ = 0.5f * normal_magnitude;  // NOLINT(*-magic-numbers)

@@ -1,19 +1,22 @@
 #ifndef GEOMETRY_MESH_SIMPLIFIER_H_
 #define GEOMETRY_MESH_SIMPLIFIER_H_
 
+#include <cstddef>
+
 namespace gfx {
 class Mesh;
 
 namespace mesh {
 
 /**
- * @brief Reduces the number of triangles in a mesh.
+ * @brief Reduces the number of vertices in a mesh.
  * @param mesh The mesh to simplify.
- * @param rate The percentage of triangles to be removed (e.g., .95 indicates 95% of triangles should be removed).
- * @return A triangle mesh with @p rate percent of triangles removed from @p mesh.
- * @throw std::invalid_argument Thrown if the simplification rate is not in the interval [0,1].
+ * @param target_vertex_fraction The fraction of the original vertices to keep.
+ * @param num_threads The requested thread count. Currently accepted for plumbing but not used.
+ * @return A triangle mesh simplified to approximately @p target_vertex_fraction of the input vertices.
+ * @throw std::invalid_argument Thrown if the target fraction is not in the interval [0,1].
  */
-Mesh Simplify(const Mesh& mesh, double rate);
+Mesh Simplify(const Mesh& mesh, double target_vertex_fraction, std::size_t num_threads);
 
 }  // namespace mesh
 }  // namespace gfx

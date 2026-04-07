@@ -49,6 +49,9 @@ public:
     return edge_.lock();
   }
 
+  /** @brief Gets the last created half-edge that points to this vertex if one is still available. */
+  [[nodiscard]] std::shared_ptr<const HalfEdge> try_edge() const noexcept { return edge_.lock(); }
+
   /** @brief Sets the vertex half-edge. */
   void set_edge(const std::shared_ptr<const HalfEdge>& edge) noexcept;
 

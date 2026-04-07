@@ -1,9 +1,11 @@
 #include "obj_io.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <fstream>
 #include <iomanip>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -44,21 +46,45 @@ double ParseDouble(const std::string_view token) {
   throw std::invalid_argument{"Unable to parse floating point value in OBJ"};
 }
 
+bool IsDegenerateTriangle(const std::vector<Vec3>& positions, const Index i0, const Index i1, const Index i2) {
+  if (i0 == i1 || i1 == i2 || i0 == i2) return true;
+
+  const auto edge01 = positions[i1] - positions[i0];
+  const auto edge02 = positions[i2] - positions[i0];
+  return Length(Cross(edge01, edge02)) == 0.0;
+}
+
+std::array<Index, 3> MakeUndirectedTriangleKey(const Index i0, const Index i1, const Index i2) {
+  std::array key{i0, i1, i2};
+  std::ranges::sort(key);
+  return key;
+}
+
 Index ParseFaceIndex(const std::string_view token, const std::size_t vertex_count) {
   const auto separator = token.find('/');
   const auto index_token = token.substr(0, separator);
-  if (index_token.empty() || index_token.starts_with('-')) {
+  if (index_token.empty()) {
     throw std::invalid_argument{"Unsupported OBJ face index"};
   }
 
   int one_based_index = 0;
   if (const auto [_, error_code] =
           std::from_chars(index_token.data(), index_token.data() + index_token.size(), one_based_index);
-      error_code != std::errc{} || one_based_index <= 0) {
+      error_code != std::errc{} || one_based_index == 0) {
     throw std::invalid_argument{"Unable to parse face index in OBJ"};
   }
 
-  const auto zero_based_index = static_cast<std::size_t>(one_based_index - 1);
+  std::size_t zero_based_index = 0;
+  if (one_based_index > 0) {
+    zero_based_index = static_cast<std::size_t>(one_based_index - 1);
+  } else {
+    const auto relative_index = static_cast<std::ptrdiff_t>(vertex_count) + one_based_index;
+    if (relative_index < 0) {
+      throw std::invalid_argument{"OBJ face index is out of bounds"};
+    }
+    zero_based_index = static_cast<std::size_t>(relative_index);
+  }
+
   if (zero_based_index >= vertex_count) {
     throw std::invalid_argument{"OBJ face index is out of bounds"};
   }
@@ -71,6 +97,7 @@ Index ParseFaceIndex(const std::string_view token, const std::size_t vertex_coun
 Mesh LoadMesh(std::istream& input) {
   std::vector<Vec3> positions;
   std::vector<Index> indices;
+  std::set<std::array<Index, 3>> triangles;
 
   for (std::string line; std::getline(input, line);) {
     const auto trimmed_line = Trim(line);
@@ -91,9 +118,14 @@ Mesh LoadMesh(std::istream& input) {
       if (tokens.size() != 4) {
         throw std::invalid_argument{"Only triangular faces are supported"};
       }
-      indices.push_back(ParseFaceIndex(tokens[1], positions.size()));
-      indices.push_back(ParseFaceIndex(tokens[2], positions.size()));
-      indices.push_back(ParseFaceIndex(tokens[3], positions.size()));
+      const auto i0 = ParseFaceIndex(tokens[1], positions.size());
+      const auto i1 = ParseFaceIndex(tokens[2], positions.size());
+      const auto i2 = ParseFaceIndex(tokens[3], positions.size());
+      if (!IsDegenerateTriangle(positions, i0, i1, i2) && triangles.emplace(MakeUndirectedTriangleKey(i0, i1, i2)).second) {
+        indices.push_back(i0);
+        indices.push_back(i1);
+        indices.push_back(i2);
+      }
     }
   }
 

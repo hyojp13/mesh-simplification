@@ -1,8 +1,6 @@
 #ifndef GEOMETRY_HALF_EDGE_H_
 #define GEOMETRY_HALF_EDGE_H_
 
-#include <algorithm>
-#include <array>
 #include <cassert>
 #include <memory>
 
@@ -26,11 +24,17 @@ public:
     return vertex_.lock();
   }
 
+  /** @brief Gets the vertex at the head of this half-edge if it is still available. */
+  [[nodiscard]] std::shared_ptr<Vertex> try_vertex() const noexcept { return vertex_.lock(); }
+
   /** @brief Gets the half-edge that shares this edge's vertices in the opposite direction. */
   [[nodiscard]] std::shared_ptr<HalfEdge> flip() const noexcept {
     assert(!flip_.expired());
     return flip_.lock();
   }
+
+  /** @brief Gets the flip half-edge if it is still available. */
+  [[nodiscard]] std::shared_ptr<HalfEdge> try_flip() const noexcept { return flip_.lock(); }
 
   /** @brief Sets the flip half-edge. */
   void set_flip(const std::shared_ptr<HalfEdge>& flip) noexcept {
@@ -45,6 +49,9 @@ public:
     return next_.lock();
   }
 
+  /** @brief Gets the next half-edge if it is still available. */
+  [[nodiscard]] std::shared_ptr<HalfEdge> try_next() const noexcept { return next_.lock(); }
+
   /** @brief Sets the next half-edge. */
   void set_next(const std::shared_ptr<HalfEdge>& next) noexcept {
     assert(*this != *next);
@@ -58,23 +65,11 @@ public:
     return face_.lock();
   }
 
+  /** @brief Gets the face if it is still available. */
+  [[nodiscard]] std::shared_ptr<Face> try_face() const noexcept { return face_.lock(); }
+
   /** @brief Sets the half-edge face. */
   void set_face(const std::shared_ptr<Face>& face) noexcept {
-#ifndef NDEBUG
-    // verify face belongs to this half-edge
-    const std::array face_vertices{*face->v0(), *face->v1(), *face->v2()};
-    const auto iterator = std::ranges::find_if(face_vertices, [this, edge_vertex = *vertex()](const auto& face_vertex) {
-      if (face_vertex == edge_vertex) {
-        auto face_edge = face_vertex.edge();
-        do {
-          if (*this == *face_edge) return true;
-          face_edge = face_edge->next()->flip();
-        } while (face_edge != face_vertex.edge());
-      }
-      return false;
-    });
-    assert(iterator != std::ranges::end(face_vertices));
-#endif
     face_ = face;
   }
 

@@ -124,7 +124,7 @@ void DeleteEdge(const HalfEdge& edge, std::map<EdgeKey, std::shared_ptr<HalfEdge
  */
 void DeleteFace(const Face& face, std::map<FaceKey, std::shared_ptr<Face>>& faces) {
   const auto iterator = faces.find(MakeFaceKey(face));
-  assert(iterator != faces.end());
+  if (iterator == faces.end()) return;
   faces.erase(iterator);
 }
 
@@ -206,9 +206,19 @@ HalfEdgeMesh::operator Mesh() const {
   }
 
   for (const auto& face : faces_ | std::views::values) {
-    indices.push_back(index_map.at(face->v0()->id()));
-    indices.push_back(index_map.at(face->v1()->id()));
-    indices.push_back(index_map.at(face->v2()->id()));
+    const auto v0 = face->try_v0();
+    const auto v1 = face->try_v1();
+    const auto v2 = face->try_v2();
+    if (!v0 || !v1 || !v2) continue;
+
+    const auto i0 = index_map.find(v0->id());
+    const auto i1 = index_map.find(v1->id());
+    const auto i2 = index_map.find(v2->id());
+    if (i0 == index_map.end() || i1 == index_map.end() || i2 == index_map.end()) continue;
+
+    indices.push_back(i0->second);
+    indices.push_back(i1->second);
+    indices.push_back(i2->second);
   }
 
   return Mesh{positions, indices};

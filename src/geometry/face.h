@@ -26,17 +26,26 @@ public:
     return v0_.lock();
   }
 
+  /** @brief Gets the first face vertex if it is still available. */
+  [[nodiscard]] std::shared_ptr<const Vertex> try_v0() const noexcept { return v0_.lock(); }
+
   /** @brief Gets the second face vertex. */
   [[nodiscard]] std::shared_ptr<const Vertex> v1() const noexcept {
     assert(!v1_.expired());
     return v1_.lock();
   }
 
+  /** @brief Gets the second face vertex if it is still available. */
+  [[nodiscard]] std::shared_ptr<const Vertex> try_v1() const noexcept { return v1_.lock(); }
+
   /** @brief Gets the third face vertex. */
   [[nodiscard]] std::shared_ptr<const Vertex> v2() const noexcept {
     assert(!v2_.expired());
     return v2_.lock();
   }
+
+  /** @brief Gets the third face vertex if it is still available. */
+  [[nodiscard]] std::shared_ptr<const Vertex> try_v2() const noexcept { return v2_.lock(); }
 
   /** @brief Gets the face normal. */
   [[nodiscard]] const Vec3& normal() const noexcept { return normal_; }

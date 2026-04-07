@@ -1,7 +1,9 @@
+#include <chrono>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -10,7 +12,7 @@
 
 namespace {
 
-double ParseReductionRate(std::string_view token) {
+double ParseTargetVertexFraction(std::string_view token) {
   auto uses_percent_units = false;
   if (!token.empty() && token.back() == '%') {
     uses_percent_units = true;
@@ -23,25 +25,42 @@ double ParseReductionRate(std::string_view token) {
   try {
     value = std::stod(text, &parsed_characters);
   } catch (...) {
-    throw std::invalid_argument{"Reduction must be a number such as 50 or 0.5"};
+    throw std::invalid_argument{"Target vertex percentage must be a number such as 50, 50%, or 0.5"};
   }
 
   if (parsed_characters != text.size()) {
-    throw std::invalid_argument{"Reduction must be a number such as 50 or 0.5"};
+    throw std::invalid_argument{"Target vertex percentage must be a number such as 50, 50%, or 0.5"};
   }
 
   if (uses_percent_units || value > 1.0) {
     if (value < 0.0 || value > 100.0) {
-      throw std::invalid_argument{"Reduction percentage must be in the range [0, 100]"};
+      throw std::invalid_argument{"Target vertex percentage must be in the range [0, 100]"};
     }
     return value / 100.0;
   }
 
   if (value < 0.0 || value > 1.0) {
-    throw std::invalid_argument{"Reduction ratio must be in the range [0, 1]"};
+    throw std::invalid_argument{"Target vertex ratio must be in the range [0, 1]"};
   }
 
   return value;
+}
+
+std::size_t ParseThreadCount(const std::string_view token) {
+  const auto text = std::string{token};
+  std::size_t parsed_characters = 0;
+  unsigned long long value = 0;
+  try {
+    value = std::stoull(text, &parsed_characters);
+  } catch (...) {
+    throw std::invalid_argument{"Thread count must be a positive integer"};
+  }
+
+  if (parsed_characters != text.size() || value == 0) {
+    throw std::invalid_argument{"Thread count must be a positive integer"};
+  }
+
+  return static_cast<std::size_t>(value);
 }
 
 std::filesystem::path ResolvePathForComparison(const std::filesystem::path& path) {
@@ -76,9 +95,9 @@ void ValidateDistinctPaths(const std::filesystem::path& input_path, const std::f
 }  // namespace
 
 int main(int argc, char** argv) {
-  if (argc != 4) {
-    std::cerr << "Usage: " << argv[0] << " <input.obj> <output.obj> <percent_removed>\n";
-    std::cerr << "Example: " << argv[0] << " bunny.obj bunny_simplified.obj 50\n";
+  if (argc != 4 && argc != 5) {
+    std::cerr << "Usage: " << argv[0] << " <input.obj> <output.obj> <target_vertex_percent> [threads]\n";
+    std::cerr << "Example: " << argv[0] << " bunny.obj bunny_simplified.obj 50% 4\n";
     return EXIT_FAILURE;
   }
 
@@ -87,20 +106,26 @@ int main(int argc, char** argv) {
     const std::filesystem::path output_path{argv[2]};
     ValidateDistinctPaths(input_path, output_path);
 
-    const auto reduction_rate = ParseReductionRate(argv[3]);
+    const auto target_vertex_fraction = ParseTargetVertexFraction(argv[3]);
+    const auto num_threads = argc == 5 ? ParseThreadCount(argv[4]) : std::size_t{1};
     const auto mesh = gfx::obj_io::LoadMesh(input_path);
 
     if (mesh.indices().empty()) {
       throw std::invalid_argument{"Input OBJ must contain triangular faces"};
     }
 
-    const auto simplified_mesh = gfx::mesh::Simplify(mesh, reduction_rate);
+    const auto simplification_start = std::chrono::high_resolution_clock::now();
+    const auto simplified_mesh = gfx::mesh::Simplify(mesh, target_vertex_fraction, num_threads);
+    const std::chrono::duration<double> simplification_time =
+        std::chrono::high_resolution_clock::now() - simplification_start;
+
     gfx::obj_io::WriteMesh(output_path, simplified_mesh);
 
     std::cout << "Simplified mesh written to " << output_path << '\n';
     std::cout << "Input vertices: " << mesh.positions().size() << ", faces: " << mesh.indices().size() / 3 << '\n';
     std::cout << "Output vertices: " << simplified_mesh.positions().size()
               << ", faces: " << simplified_mesh.indices().size() / 3 << '\n';
+    std::cout << "Simplification time: " << simplification_time.count() << " s\n";
     return EXIT_SUCCESS;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';
