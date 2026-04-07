@@ -8,7 +8,7 @@ OUTPUT_DIR="${SCRIPT_DIR}/output"
 LOG_FILE="${OUTPUT_DIR}/run_sweep.log"
 
 THREAD_COUNTS=(1)
-TARGET_VERTEX_PERCENTS=("50%" "25%" "10%" "1%")
+TARGET_VERTEX_PERCENTS=("25%" "10%" "1%" "0.5%")
 MESHES=("bunny" "buddha" "dragon")
 
 mkdir -p "${OUTPUT_DIR}"

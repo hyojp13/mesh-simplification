@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 OUTPUT_RE = re.compile(r"^(?P<mesh>[A-Za-z0-9_-]+)_r(?P<label>[0-9]+(?:p[0-9]+)?)_t(?P<threads>\d+)\.obj$")
-TARGETS = ("100", "50", "25", "10", "1")
+TARGETS = ("100", "25", "10", "1", "0.5")
 MESHES = ("bunny", "buddha", "dragon")
 DEFAULT_PROJECTIONS = {
     "bunny": "xy",

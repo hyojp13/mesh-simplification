@@ -14,7 +14,7 @@ RUN_RE = re.compile(r"^Running mesh=(?P<mesh>\S+) target_vertices=(?P<target>\S+
 TIME_RE = re.compile(r"^Simplification time:\s*(?P<time>[0-9]+(?:\.[0-9]+)?)\s*s\s*$")
 
 EXPECTED_MESHES = ("bunny", "buddha", "dragon")
-EXPECTED_TARGETS = ("50%", "25%", "10%", "1%", "0.1%")
+EXPECTED_TARGETS = ("25%", "10%", "1%", "0.5%")
 EXPECTED_THREADS = (1, 2, 4, 8, 16)
 
 
