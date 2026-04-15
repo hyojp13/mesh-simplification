@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <vector>
+#include <algorithm>
 
 #include "geometry/mesh_simplifier.h"
 #include "obj_io.h"
@@ -95,27 +97,45 @@ void ValidateDistinctPaths(const std::filesystem::path& input_path, const std::f
 }  // namespace
 
 int main(int argc, char** argv) {
-  if (argc != 4 && argc != 5) {
-    std::cerr << "Usage: " << argv[0] << " <input.obj> <output.obj> <target_vertex_percent> [threads]\n";
-    std::cerr << "Example: " << argv[0] << " bunny.obj bunny_simplified.obj 50% 4\n";
+  // Extract arguments and check for the --simd flag
+  bool use_simd = false;
+  std::vector<std::string> args;
+  
+  for (int i = 1; i < argc; ++i) {
+    if (std::string(argv[i]) == "--simd") {
+      use_simd = true;
+    } else {
+      args.push_back(argv[i]);
+    }
+  }
+
+  if (args.size() != 3 && args.size() != 4) {
+    std::cerr << "Usage: " << argv[0] << " <input.obj> <output.obj> <target_vertex_percent> [threads] [--simd]\n";
+    std::cerr << "Example: " << argv[0] << " bunny.obj bunny_simplified.obj 50% 4 --simd\n";
     return EXIT_FAILURE;
   }
 
   try {
-    const std::filesystem::path input_path{argv[1]};
-    const std::filesystem::path output_path{argv[2]};
+    const std::filesystem::path input_path{args[0]};
+    const std::filesystem::path output_path{args[1]};
     ValidateDistinctPaths(input_path, output_path);
 
-    const auto target_vertex_fraction = ParseTargetVertexFraction(argv[3]);
-    const auto num_threads = argc == 5 ? ParseThreadCount(argv[4]) : std::size_t{1};
+    const auto target_vertex_fraction = ParseTargetVertexFraction(args[2]);
+    const auto num_threads = args.size() == 4 ? ParseThreadCount(args[3]) : std::size_t{1};
     const auto mesh = gfx::obj_io::LoadMesh(input_path);
 
     if (mesh.indices().empty()) {
       throw std::invalid_argument{"Input OBJ must contain triangular faces"};
     }
 
+    std::cout << "Starting simplification...\n";
+    std::cout << "Threads: " << num_threads << " | SIMD Matrix Math: " << (use_simd ? "ON" : "OFF") << '\n';
+
     const auto simplification_start = std::chrono::high_resolution_clock::now();
-    const auto simplified_mesh = gfx::mesh::Simplify(mesh, target_vertex_fraction, num_threads);
+    
+    // NOTE: You will need to update your Simplify function signature to accept the `use_simd` boolean!
+    const auto simplified_mesh = gfx::mesh::Simplify(mesh, target_vertex_fraction, num_threads, use_simd);
+    
     const std::chrono::duration<double> simplification_time =
         std::chrono::high_resolution_clock::now() - simplification_start;
 
@@ -128,7 +148,7 @@ int main(int argc, char** argv) {
     std::cout << "Simplification time: " << simplification_time.count() << " s\n";
     return EXIT_SUCCESS;
   } catch (const std::exception& error) {
-    std::cerr << error.what() << '\n';
+    std::cerr << "Error: " << error.what() << '\n';
     return EXIT_FAILURE;
   }
 }

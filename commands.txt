@@ -1,0 +1,9 @@
+rm -rf build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./run_sweep.sh
+./generate_latex_results.py output/run_sweep.log -o output/results.tex
+run_sweep.sh makes a log of all the timings and also obj files of the output
+
+run_sweep_simd.py testing both simd and seq, using use_simd flag
+you can revert mesh_simplifier.cpp, main.cpp, and mesh_simplifier.h to remove simd as we won't gonng use simd.

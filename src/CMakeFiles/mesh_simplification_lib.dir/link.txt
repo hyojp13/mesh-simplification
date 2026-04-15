@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmesh_simplification_lib.a CMakeFiles/mesh_simplification_lib.dir/geometry/face.cpp.o CMakeFiles/mesh_simplification_lib.dir/geometry/half_edge_mesh.cpp.o CMakeFiles/mesh_simplification_lib.dir/geometry/mesh_simplifier.cpp.o CMakeFiles/mesh_simplification_lib.dir/mesh.cpp.o CMakeFiles/mesh_simplification_lib.dir/obj_io.cpp.o
+/usr/bin/ranlib libmesh_simplification_lib.a

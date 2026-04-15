@@ -16,7 +16,7 @@ namespace mesh {
  * @return A triangle mesh simplified to approximately @p target_vertex_fraction of the input vertices.
  * @throw std::invalid_argument Thrown if the target fraction is not in the interval [0,1].
  */
-Mesh Simplify(const Mesh& mesh, double target_vertex_fraction, std::size_t num_threads);
+Mesh Simplify(const Mesh& mesh, double target_vertex_fraction, std::size_t num_threads, bool use_simd);
 
 }  // namespace mesh
 }  // namespace gfx

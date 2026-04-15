@@ -1,0 +1,1 @@
+/usr/bin/c++  -mavx2 -mfma CMakeFiles/mesh_simplification.dir/main.cpp.o -o mesh_simplification  libmesh_simplification_lib.a 

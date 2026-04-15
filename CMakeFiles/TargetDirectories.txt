@@ -1,0 +1,6 @@
+/afs/andrew.cmu.edu/usr20/eugenel/private/15418/mesh-simplification/CMakeFiles/edit_cache.dir
+/afs/andrew.cmu.edu/usr20/eugenel/private/15418/mesh-simplification/CMakeFiles/rebuild_cache.dir
+/afs/andrew.cmu.edu/usr20/eugenel/private/15418/mesh-simplification/src/CMakeFiles/mesh_simplification_lib.dir
+/afs/andrew.cmu.edu/usr20/eugenel/private/15418/mesh-simplification/src/CMakeFiles/mesh_simplification.dir
+/afs/andrew.cmu.edu/usr20/eugenel/private/15418/mesh-simplification/src/CMakeFiles/edit_cache.dir
+/afs/andrew.cmu.edu/usr20/eugenel/private/15418/mesh-simplification/src/CMakeFiles/rebuild_cache.dir
