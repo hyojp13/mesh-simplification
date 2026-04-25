@@ -1,5 +1,7 @@
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+find_package(OpenMP QUIET)
+
 add_library(mesh_simplification_lib STATIC
             geometry/face.cpp
             geometry/half_edge_mesh.cpp
@@ -8,6 +10,11 @@ add_library(mesh_simplification_lib STATIC
             obj_io.cpp)
 
 target_include_directories(mesh_simplification_lib PUBLIC ${SRC_DIR})
+
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(mesh_simplification_lib PUBLIC OpenMP::OpenMP_CXX)
+  target_compile_definitions(mesh_simplification_lib PUBLIC MESH_SIMPLIFICATION_HAS_OPENMP=1)
+endif()
 
 target_sources(mesh_simplification_lib PUBLIC FILE_SET HEADERS
                BASE_DIRS ${SRC_DIR}

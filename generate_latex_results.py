@@ -10,9 +10,12 @@ from collections import OrderedDict
 from pathlib import Path
 
 
-RUN_RE = re.compile(r"^Running mesh=(?P<mesh>\S+) target_vertices=(?P<target>\S+) threads=(?P<threads>\d+)\s*$")
+RUN_RE = re.compile(
+    r"^Running(?:\s+mode=(?P<mode>\S+))?\s+mesh=(?P<mesh>\S+)\s+target_vertices=(?P<target>\S+)\s+threads=(?P<threads>\d+)(?:\s+partitions=(?P<partitions>\d+))?\s*$"
+)
 TIME_RE = re.compile(r"^Simplification time:\s*(?P<time>[0-9]+(?:\.[0-9]+)?)\s*s\s*$")
 
+EXPECTED_MODES = ("sequential", "partitioned_batch")
 EXPECTED_MESHES = ("bunny", "buddha", "dragon")
 EXPECTED_TARGETS = ("25%", "10%", "1%", "0.5%")
 EXPECTED_THREADS = (1, 2, 4, 8, 16)
@@ -40,12 +43,13 @@ def ordered_insert(values: OrderedDict, key) -> None:
 
 
 def parse_log(log_path: Path):
-  results: dict[tuple[str, str, int], float] = {}
+  results: dict[tuple[str, str, str, int], float] = {}
+  mode_order: OrderedDict[str, None] = OrderedDict()
   mesh_order: OrderedDict[str, None] = OrderedDict()
   target_order: OrderedDict[str, None] = OrderedDict()
   thread_order: OrderedDict[int, None] = OrderedDict()
   warnings: list[str] = []
-  current_run: tuple[str, str, int] | None = None
+  current_run: tuple[str, str, str, int] | None = None
   duplicates = 0
 
   for line_number, raw_line in enumerate(log_path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -55,10 +59,12 @@ def parse_log(log_path: Path):
 
     run_match = RUN_RE.match(line)
     if run_match:
+      mode = run_match.group("mode") or "sequential"
       mesh = run_match.group("mesh")
       target = run_match.group("target")
       threads = int(run_match.group("threads"))
-      current_run = (mesh, target, threads)
+      current_run = (mode, mesh, target, threads)
+      ordered_insert(mode_order, mode)
       ordered_insert(mesh_order, mesh)
       ordered_insert(target_order, target)
       ordered_insert(thread_order, threads)
@@ -75,11 +81,13 @@ def parse_log(log_path: Path):
       current_run = None
 
   if current_run is not None:
-    warnings.append(f"missing timing line after run: mesh={current_run[0]} target={current_run[1]} threads={current_run[2]}")
+    warnings.append(
+        f"missing timing line after run: mode={current_run[0]} mesh={current_run[1]} target={current_run[2]} threads={current_run[3]}"
+    )
   if duplicates:
     warnings.append(f"found {duplicates} duplicate run entries; using the last timing for each duplicate")
 
-  return results, list(mesh_order), list(target_order), sorted(thread_order), warnings
+  return results, list(mode_order), list(mesh_order), list(target_order), sorted(thread_order), warnings
 
 
 def sorted_targets(targets: list[str]) -> list[str]:
@@ -87,15 +95,16 @@ def sorted_targets(targets: list[str]) -> list[str]:
   return sorted(targets, key=lambda target: (expected_rank.get(target, len(expected_rank)), target))
 
 
-def expected_warnings(results: dict[tuple[str, str, int], float]) -> list[str]:
-  warnings: list[str] = []
-  present_meshes = {mesh for mesh, _, _ in results}
-  present_targets = {target for _, target, _ in results}
-  present_threads = {threads for _, _, threads in results}
+def sorted_modes(modes: list[str]) -> list[str]:
+  expected_rank = {mode: index for index, mode in enumerate(EXPECTED_MODES)}
+  return sorted(modes, key=lambda mode: (expected_rank.get(mode, len(expected_rank)), mode))
 
-  missing_threads = [thread for thread in EXPECTED_THREADS if thread not in present_threads]
-  if missing_threads:
-    warnings.append(f"missing expected thread counts: {', '.join(map(str, missing_threads))}")
+
+def expected_warnings(results: dict[tuple[str, str, str, int], float]) -> list[str]:
+  warnings: list[str] = []
+  present_modes = {mode for mode, _, _, _ in results}
+  present_meshes = {mesh for _, mesh, _, _ in results}
+  present_targets = {target for _, _, target, _ in results}
 
   missing_targets = [target for target in EXPECTED_TARGETS if target not in present_targets]
   if missing_targets:
@@ -105,56 +114,59 @@ def expected_warnings(results: dict[tuple[str, str, int], float]) -> list[str]:
   if missing_meshes:
     warnings.append(f"missing expected meshes: {', '.join(missing_meshes)}")
 
-  missing_baselines = sorted((mesh, target) for mesh in present_meshes for target in present_targets
-                             if (mesh, target, 1) not in results)
-  if missing_baselines:
-    preview = ", ".join(f"{mesh}/{target}" for mesh, target in missing_baselines[:8])
-    suffix = "" if len(missing_baselines) <= 8 else f", ... ({len(missing_baselines)} total)"
-    warnings.append(f"missing 1-thread baselines for speedups: {preview}{suffix}")
+  for mode in sorted_modes(list(present_modes)):
+    present_threads = {threads for result_mode, _, _, threads in results if result_mode == mode}
+    missing_threads = [thread for thread in EXPECTED_THREADS if thread not in present_threads]
+    if missing_threads:
+      warnings.append(f"mode={mode} missing expected thread counts: {', '.join(map(str, missing_threads))}")
+
+    missing_baselines = sorted(
+        (mesh, target)
+        for mesh in present_meshes
+        for target in present_targets
+        if (mode, mesh, target, 1) not in results
+    )
+    if missing_baselines:
+      preview = ", ".join(f"{mesh}/{target}" for mesh, target in missing_baselines[:8])
+      suffix = "" if len(missing_baselines) <= 8 else f", ... ({len(missing_baselines)} total)"
+      warnings.append(f"mode={mode} missing 1-thread baselines for speedups: {preview}{suffix}")
 
   return warnings
 
 
-def coordinate_block(results: dict[tuple[str, str, int], float], mesh: str, target: str, threads: list[int]) -> str:
-  baseline = results.get((mesh, target, 1))
+def coordinate_block(
+    results: dict[tuple[str, str, str, int], float],
+    mode: str,
+    mesh: str,
+    target: str,
+    threads: list[int],
+) -> str:
+  baseline = results.get((mode, mesh, target, 1))
   if baseline is None:
     return ""
 
   coordinates: list[str] = []
   for thread_count in threads:
-    time = results.get((mesh, target, thread_count))
+    time = results.get((mode, mesh, target, thread_count))
     if time is None:
       continue
     coordinates.append(f"({thread_count},{baseline / time:.6f})")
   return " ".join(coordinates)
 
 
-def generate_latex(results: dict[tuple[str, str, int], float],
-                   meshes: list[str],
-                   targets: list[str],
-                   threads: list[int],
-                   warnings: list[str]) -> str:
-  meshes = [mesh for mesh in EXPECTED_MESHES if mesh in meshes] + [mesh for mesh in meshes if mesh not in EXPECTED_MESHES]
-  targets = sorted_targets(targets)
-  threads = sorted(threads)
-  xtick_values = threads if threads else list(EXPECTED_THREADS)
+def mode_figure(
+    results: dict[tuple[str, str, str, int], float],
+    mode: str,
+    meshes: list[str],
+    targets: list[str],
+    threads: list[int],
+) -> list[str]:
   mesh_count = max(1, len(meshes))
   horizontal_sep_fraction = 0.07 if mesh_count > 1 else 0.0
   plot_width_fraction = (0.94 - horizontal_sep_fraction * (mesh_count - 1)) / mesh_count
   plot_height_fraction = 0.72 / mesh_count
 
-  lines: list[str] = [
-      r"% Generated by generate_latex_results.py.",
-      r"% Preamble requirements:",
-      r"% \usepackage{pgfplots}",
-      r"% \usepgfplotslibrary{groupplots}",
-      r"% \pgfplotsset{compat=1.18}",
-  ]
-  for warning in warnings:
-    lines.append(f"% WARNING: {warning}")
-
-  lines.extend([
-      "",
+  lines = [
       r"\begin{figure}[htbp]",
       r"\centering",
       r"\noindent\makebox[\linewidth][c]{%",
@@ -164,10 +176,10 @@ def generate_latex(results: dict[tuple[str, str, int], float],
       rf"  width={{{plot_width_fraction:.4f}\paperwidth}},",
       rf"  height={{{plot_height_fraction:.4f}\paperwidth}},",
       r"  xlabel={Threads},",
-      f"  xtick={{{','.join(map(str, xtick_values))}}},",
+      f"  xtick={{{','.join(map(str, threads))}}},",
       r"  grid=both,",
       r"]",
-  ])
+  ]
 
   added_legend_entries = False
   for mesh_index, mesh in enumerate(meshes):
@@ -180,7 +192,7 @@ def generate_latex(results: dict[tuple[str, str, int], float],
     lines.append(f"\\nextgroupplot[title={{{latex_escape(mesh)}}}{ylabel_option}{legend_option}]")
     plotted_any = False
     for target in targets:
-      coordinates = coordinate_block(results, mesh, target, threads)
+      coordinates = coordinate_block(results, mode, mesh, target, threads)
       if not coordinates:
         continue
       lines.append(f"\\addplot+[mark=*] coordinates {{{coordinates}}};")
@@ -196,24 +208,73 @@ def generate_latex(results: dict[tuple[str, str, int], float],
       r"\end{groupplot}",
       r"\end{tikzpicture}",
       r"}%",
-      r"\caption{Mesh simplification speedup relative to the one-thread runtime.}",
-      r"\label{fig:mesh-simplification-speedup}",
+      rf"\caption{{Mesh simplification speedup relative to the one-thread runtime for mode={latex_escape(mode)}.}}",
+      rf"\label{{fig:mesh-simplification-speedup-{latex_escape(mode).replace('\\', '').replace('{', '').replace('}', '')}}}",
       r"\end{figure}",
       "",
-      r"\begin{table}[htbp]",
-      r"\centering",
-      r"\begin{tabular}{l" + "r" * len(targets) + "}",
-      r"\hline",
-      "Mesh & " + " & ".join(latex_escape(target) for target in targets) + r" \\",
-      r"\hline",
   ])
+  return lines
 
-  for mesh in meshes:
-    row = [latex_escape(mesh)]
-    for target in targets:
-      time = results.get((mesh, target, 1))
-      row.append("--" if time is None else f"{time:.3f}")
-    lines.append(" & ".join(row) + r" \\")
+
+def generate_latex(
+    results: dict[tuple[str, str, str, int], float],
+    modes: list[str],
+    meshes: list[str],
+    targets: list[str],
+    threads: list[int],
+    warnings: list[str],
+) -> str:
+  modes = sorted_modes(modes)
+  meshes = [mesh for mesh in EXPECTED_MESHES if mesh in meshes] + [mesh for mesh in meshes if mesh not in EXPECTED_MESHES]
+  targets = sorted_targets(targets)
+  threads = sorted(threads)
+
+  lines: list[str] = [
+      r"% Generated by generate_latex_results.py.",
+      r"% Preamble requirements:",
+      r"% \usepackage{pgfplots}",
+      r"% \usepgfplotslibrary{groupplots}",
+      r"% \pgfplotsset{compat=1.18}",
+  ]
+  for warning in warnings:
+    lines.append(f"% WARNING: {warning}")
+  lines.append("")
+
+  for mode in modes:
+    lines.extend(mode_figure(results, mode, meshes, targets, threads or list(EXPECTED_THREADS)))
+
+  if len(modes) == 1:
+    lines.extend([
+        r"\begin{table}[htbp]",
+        r"\centering",
+        r"\begin{tabular}{l" + "r" * len(targets) + "}",
+        r"\hline",
+        "Mesh & " + " & ".join(latex_escape(target) for target in targets) + r" \\",
+        r"\hline",
+    ])
+    mode = modes[0]
+    for mesh in meshes:
+      row = [latex_escape(mesh)]
+      for target in targets:
+        time = results.get((mode, mesh, target, 1))
+        row.append("--" if time is None else f"{time:.3f}")
+      lines.append(" & ".join(row) + r" \\")
+  else:
+    lines.extend([
+        r"\begin{table}[htbp]",
+        r"\centering",
+        r"\begin{tabular}{ll" + "r" * len(targets) + "}",
+        r"\hline",
+        "Mode & Mesh & " + " & ".join(latex_escape(target) for target in targets) + r" \\",
+        r"\hline",
+    ])
+    for mode in modes:
+      for mesh in meshes:
+        row = [latex_escape(mode), latex_escape(mesh)]
+        for target in targets:
+          time = results.get((mode, mesh, target, 1))
+          row.append("--" if time is None else f"{time:.3f}")
+        lines.append(" & ".join(row) + r" \\")
 
   lines.extend([
       r"\hline",
@@ -229,25 +290,32 @@ def generate_latex(results: dict[tuple[str, str, int], float],
 
 def main() -> int:
   parser = argparse.ArgumentParser(description="Generate LaTeX PGFPlots graphs and timing tables from run_sweep.log.")
-  parser.add_argument("log", nargs="?", default="output/run_sweep.log", type=Path, help="Path to run_sweep.log")
-  parser.add_argument("-o", "--output", default=Path("output/results.tex"), type=Path, help="Output .tex file")
+  parser.add_argument(
+      "log",
+      nargs="?",
+      default=Path("output/sequential/run_sweep.log"),
+      type=Path,
+      help="Path to run_sweep.log",
+  )
+  parser.add_argument("-o", "--output", type=Path, help="Output .tex file; defaults to <log-dir>/results.tex")
   args = parser.parse_args()
 
   if not args.log.exists():
     print(f"Missing log file: {args.log}", file=sys.stderr)
     return 1
 
-  results, meshes, targets, threads, parse_warnings = parse_log(args.log)
+  results, modes, meshes, targets, threads, parse_warnings = parse_log(args.log)
   warnings = parse_warnings + expected_warnings(results)
   if not results:
     print(f"No successful simplification timings found in {args.log}", file=sys.stderr)
     return 1
 
-  tex = generate_latex(results, meshes, targets, threads, warnings)
-  args.output.parent.mkdir(parents=True, exist_ok=True)
-  args.output.write_text(tex, encoding="utf-8")
+  output_path = args.output or (args.log.parent / "results.tex")
+  tex = generate_latex(results, modes, meshes, targets, threads, warnings)
+  output_path.parent.mkdir(parents=True, exist_ok=True)
+  output_path.write_text(tex, encoding="utf-8")
 
-  print(f"Wrote {args.output}")
+  print(f"Wrote {output_path}")
   print(f"Parsed {len(results)} timing entries from {args.log}")
   for warning in warnings:
     print(f"Warning: {warning}", file=sys.stderr)

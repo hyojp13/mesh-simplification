@@ -423,9 +423,14 @@ def generate_latex(jobs: list[RenderJob],
 
 def main() -> int:
   parser = argparse.ArgumentParser(description="Render OBJ outputs from the side and generate a LaTeX figure.")
-  parser.add_argument("--output-dir", type=Path, default=Path("output"), help="Directory containing sweep OBJ outputs")
-  parser.add_argument("--image-dir", type=Path, default=Path("output/renders"), help="Directory for rendered PDFs")
-  parser.add_argument("--tex", type=Path, default=Path("output/rendered_meshes.tex"), help="Output LaTeX file")
+  parser.add_argument(
+      "--output-dir",
+      type=Path,
+      default=Path("output/sequential"),
+      help="Directory containing sweep OBJ outputs",
+  )
+  parser.add_argument("--image-dir", type=Path, help="Directory for rendered PDFs; defaults to <output-dir>/renders")
+  parser.add_argument("--tex", type=Path, help="Output LaTeX file; defaults to <output-dir>/rendered_meshes.tex")
   parser.add_argument(
       "--projection",
       choices=("auto", "xy", "-xy", "xz", "-xz", "yz", "-yz"),
@@ -441,9 +446,11 @@ def main() -> int:
   args = parser.parse_args()
 
   root = Path.cwd()
+  image_dir = args.image_dir or (args.output_dir / "renders")
+  tex_path = args.tex or (args.output_dir / "rendered_meshes.tex")
   outputs = discover_outputs(args.output_dir, tuple(args.targets))
   add_originals(outputs, root, tuple(args.meshes))
-  jobs = build_jobs(root, args.output_dir, args.image_dir, tuple(args.meshes), tuple(args.targets), outputs)
+  jobs = build_jobs(root, args.output_dir, image_dir, tuple(args.meshes), tuple(args.targets), outputs)
 
   if not jobs:
     raise SystemExit(f"No OBJ files found in {args.output_dir}")
@@ -459,11 +466,11 @@ def main() -> int:
       args.columns,
       f"Side-view renderings of simplified meshes for target vertex percentages {', '.join(args.targets)}.",
   )
-  args.tex.parent.mkdir(parents=True, exist_ok=True)
-  args.tex.write_text(tex, encoding="utf-8")
+  tex_path.parent.mkdir(parents=True, exist_ok=True)
+  tex_path.write_text(tex, encoding="utf-8")
 
-  print(f"Rendered {len(jobs)} images into {args.image_dir}")
-  print(f"Wrote {args.tex}")
+  print(f"Rendered {len(jobs)} images into {image_dir}")
+  print(f"Wrote {tex_path}")
   return 0
 
 
