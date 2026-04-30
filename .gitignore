@@ -1,4 +1,7 @@
 .vs/
 out/
 build/
+build-debug/
+output/
+__pycache__/
 .DS_Store
