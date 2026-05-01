@@ -1,0 +1,221 @@
+Running mode=partitioned_batch mesh=bunny target_vertices=25% threads=1 partitions=1
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r25_t1.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 18007, faces: 36006
+Mesh load time: 0.118814 s
+Simplification time: 254.838 s
+Mesh write time: 0.0974175 s
+Total time: 255.054 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r25_t1.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=25% threads=2 partitions=2
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r25_t2.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 18007, faces: 36006
+Mesh load time: 0.127556 s
+Simplification time: 124.441 s
+Mesh write time: 0.094775 s
+Total time: 124.664 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r25_t2.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=25% threads=4 partitions=4
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r25_t4.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 18007, faces: 36006
+Mesh load time: 0.148366 s
+Simplification time: 50.4769 s
+Mesh write time: 0.0990987 s
+Total time: 50.7243 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r25_t4.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=25% threads=8 partitions=8
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r25_t8.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 18007, faces: 36006
+Mesh load time: 0.145889 s
+Simplification time: 25.3626 s
+Mesh write time: 0.119801 s
+Total time: 25.6283 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r25_t8.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=25% threads=16 partitions=16
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r25_t16.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 18007, faces: 36006
+Mesh load time: 0.119533 s
+Simplification time: 14.373 s
+Mesh write time: 0.141295 s
+Total time: 14.6338 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r25_t16.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=10% threads=1 partitions=1
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r10_t1.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 7203, faces: 14398
+Mesh load time: 0.139968 s
+Simplification time: 275.961 s
+Mesh write time: 0.0413577 s
+Total time: 276.142 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r10_t1.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=10% threads=2 partitions=2
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r10_t2.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 7203, faces: 14398
+Mesh load time: 0.117819 s
+Simplification time: 132.317 s
+Mesh write time: 0.0399593 s
+Total time: 132.475 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r10_t2.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=10% threads=4 partitions=4
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r10_t4.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 7203, faces: 14398
+Mesh load time: 0.11723 s
+Simplification time: 52.6542 s
+Mesh write time: 0.0384483 s
+Total time: 52.8099 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r10_t4.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=10% threads=8 partitions=8
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r10_t8.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 7203, faces: 14398
+Mesh load time: 0.115943 s
+Simplification time: 28.6103 s
+Mesh write time: 0.0488183 s
+Total time: 28.775 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r10_t8.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=10% threads=16 partitions=16
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r10_t16.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 7203, faces: 14398
+Mesh load time: 0.135703 s
+Simplification time: 16.5803 s
+Mesh write time: 0.0603716 s
+Total time: 16.7763 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r10_t16.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=1% threads=1 partitions=1
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r1_t1.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 721, faces: 1434
+Mesh load time: 0.117033 s
+Simplification time: 264.087 s
+Mesh write time: 0.00651556 s
+Total time: 264.211 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r1_t1.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=1% threads=2 partitions=2
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r1_t2.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 721, faces: 1434
+Mesh load time: 0.130791 s
+Simplification time: 132.334 s
+Mesh write time: 0.00714227 s
+Total time: 132.472 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r1_t2.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=1% threads=4 partitions=4
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r1_t4.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 721, faces: 1434
+Mesh load time: 0.12249 s
+Simplification time: 53.7853 s
+Mesh write time: 0.0054703 s
+Total time: 53.9133 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r1_t4.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=1% threads=8 partitions=8
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r1_t8.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 721, faces: 1434
+Mesh load time: 0.117719 s
+Simplification time: 29.131 s
+Mesh write time: 0.0106505 s
+Total time: 29.2594 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r1_t8.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=1% threads=16 partitions=16
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r1_t16.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 721, faces: 1434
+Mesh load time: 0.126949 s
+Simplification time: 17.4697 s
+Mesh write time: 0.0101076 s
+Total time: 17.6067 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r1_t16.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=0.5% threads=1 partitions=1
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r0p5_t1.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 361, faces: 714
+Mesh load time: 0.114316 s
+Simplification time: 273.481 s
+Mesh write time: 0.00333146 s
+Total time: 273.599 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r0p5_t1.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=0.5% threads=2 partitions=2
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r0p5_t2.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 361, faces: 714
+Mesh load time: 0.11452 s
+Simplification time: 133.852 s
+Mesh write time: 0.00538561 s
+Total time: 133.972 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r0p5_t2.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=0.5% threads=4 partitions=4
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r0p5_t4.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 361, faces: 714
+Mesh load time: 0.112825 s
+Simplification time: 55.2962 s
+Mesh write time: 0.00365439 s
+Total time: 55.4127 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r0p5_t4.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=0.5% threads=8 partitions=8
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r0p5_t8.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 361, faces: 714
+Mesh load time: 0.13902 s
+Simplification time: 29.9306 s
+Mesh write time: 0.00813161 s
+Total time: 30.0777 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r0p5_t8.csv"
+
+Running mode=partitioned_batch mesh=bunny target_vertices=0.5% threads=16 partitions=16
+Mode: partitioned_batch
+Simplified mesh written to "./qes_batch/partitioned_batch/bunny_r0p5_t16.obj"
+Input vertices: 72027, faces: 144046
+Output vertices: 361, faces: 714
+Mesh load time: 0.151186 s
+Simplification time: 17.4731 s
+Mesh write time: 0.00379504 s
+Total time: 17.6281 s
+Stats CSV: "./qes_batch/partitioned_batch/stats/bunny_r0p5_t16.csv"
+
+Running mode=partitioned_batch mesh=buddha target_vertices=25% threads=1 partitions=1

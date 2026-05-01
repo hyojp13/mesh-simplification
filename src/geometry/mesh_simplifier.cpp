@@ -672,6 +672,44 @@ PartitionSelectionResult SelectPartitionBatch(const HalfEdgeMesh& half_edge_mesh
   return result;
 }
 
+PartitionSelectionResult SelectBoundaryBatch(const HalfEdgeMesh& half_edge_mesh,
+                                             const std::vector<std::shared_ptr<EdgeContraction>>& boundary_candidates,
+                                             const std::size_t budget) {
+  auto result = PartitionSelectionResult{};
+  result.selected_candidates.reserve(std::min(budget, boundary_candidates.size()));
+
+  // Boundary edges are exactly where two or more partitions may want the same neighborhood.
+  // Select them with one global claim table rather than per-partition claim tables.
+  std::unordered_set<int> claimed_vertices;
+  for (const auto& candidate : boundary_candidates) {
+    if (result.selected_candidates.size() >= budget) break;
+    if (!IsCandidateLocallyValid(half_edge_mesh, candidate->edge_key)) continue;
+
+    const auto conflict_vertex_ids = CollectConflictVertexIds(half_edge_mesh, candidate->edge_key);
+    if (conflict_vertex_ids.empty()) continue;
+
+    auto conflicts = false;
+    for (const auto vertex_id : conflict_vertex_ids) {
+      if (claimed_vertices.contains(vertex_id)) {
+        conflicts = true;
+        break;
+      }
+    }
+
+    if (conflicts) {
+      ++result.rejected_conflicts;
+      continue;
+    }
+
+    for (const auto vertex_id : conflict_vertex_ids) {
+      claimed_vertices.insert(vertex_id);
+    }
+    result.selected_candidates.push_back(candidate);
+  }
+
+  return result;
+}
+
 bool TryContractCandidate(HalfEdgeMesh& half_edge_mesh,
                           std::unordered_map<std::size_t, Mat4>& quadrics,
                           const std::shared_ptr<EdgeContraction>& edge_contraction,
@@ -831,6 +869,8 @@ Mesh RunPartitionedBatchSimplification(HalfEdgeMesh& half_edge_mesh,
   auto next_vertex_id = half_edge_mesh.vertices().size();
   auto first_queue_build = true;
   auto have_partitioning = false;
+  auto last_round_boundary_fraction = 0.0;
+  auto last_round_local_acceptance_rate = 1.0;
 
   while (half_edge_mesh.vertices().size() > metrics.target_vertex_count) {
     const auto repartition_interval = options.repartition_every != 0
@@ -839,8 +879,14 @@ Mesh RunPartitionedBatchSimplification(HalfEdgeMesh& half_edge_mesh,
                                                 256,
                                                 static_cast<std::size_t>(
                                                     std::ceil(0.005 * static_cast<double>(half_edge_mesh.vertices().size()))));
+    // Repartition when the old spatial split has become stale.
+    // 1) accepted_since_repartition: topology has changed enough.
+    // 2) load imbalance: some partitions are doing much more work than others.
+    // 3) boundary fraction: too many edges now straddle partitions, so local work is starved.
+    // 4) local acceptance: selected local candidates are mostly becoming invalid before commit.
     const auto should_repartition =
-        !have_partitioning || accepted_since_repartition >= repartition_interval || last_round_load_imbalance > 1.5;
+        !have_partitioning || accepted_since_repartition >= repartition_interval || last_round_load_imbalance > 1.5 ||
+        last_round_boundary_fraction > 0.35 || last_round_local_acceptance_rate < 0.10;
 
     auto round_metrics = mesh::RoundMetrics{};
     round_metrics.round = metrics.round_metrics.size();
@@ -925,8 +971,13 @@ Mesh RunPartitionedBatchSimplification(HalfEdgeMesh& half_edge_mesh,
     const auto boundary_start = std::chrono::high_resolution_clock::now();
     auto accepted_boundary = std::size_t{0};
     auto skipped_boundary = std::size_t{0};
-    for (const auto& candidate : candidate_build.boundary_candidates) {
-      if (accepted_boundary >= boundary_budget || half_edge_mesh.vertices().size() <= metrics.target_vertex_count) break;
+
+    auto boundary_selection = SelectBoundaryBatch(half_edge_mesh, candidate_build.boundary_candidates, boundary_budget);
+    metrics.rejected_conflicts += boundary_selection.rejected_conflicts;
+    round_metrics.rejected_conflicts += static_cast<double>(boundary_selection.rejected_conflicts);
+
+    for (const auto& candidate : boundary_selection.selected_candidates) {
+      if (half_edge_mesh.vertices().size() <= metrics.target_vertex_count) break;
       if (TryContractCandidate(half_edge_mesh, quadrics, candidate, next_vertex_id)) {
         ++accepted_boundary;
         ++metrics.accepted_collapses;
@@ -934,6 +985,7 @@ Mesh RunPartitionedBatchSimplification(HalfEdgeMesh& half_edge_mesh,
         ++round_metrics.accepted_boundary_collapses;
         ++accepted_since_repartition;
       } else {
+        // A candidate can still become stale because local commits happened before the boundary pass.
         ++skipped_boundary;
         ++metrics.skipped_boundary_edges;
         ++round_metrics.skipped_boundary_edges;
@@ -941,6 +993,11 @@ Mesh RunPartitionedBatchSimplification(HalfEdgeMesh& half_edge_mesh,
     }
     phases.boundary_repair_seconds +=
         std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - boundary_start).count();
+
+    const auto selected_local_count = std::max<std::size_t>(1, selection.selected_candidates.size());
+    last_round_boundary_fraction = round_metrics.boundary_edge_fraction;
+    last_round_local_acceptance_rate =
+        static_cast<double>(round_metrics.accepted_local_collapses) / static_cast<double>(selected_local_count);
 
     metrics.round_metrics.push_back(round_metrics);
 
